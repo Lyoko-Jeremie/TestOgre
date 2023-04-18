@@ -1,0 +1,923 @@
+﻿#include <iostream>
+#include <array>
+#include <utility>
+#include <vector>
+#include <memory>
+#include <map>
+#include <Ogre.h>
+#include <OgreApplicationContext.h>
+#include <OgreInput.h>
+#include <OgreRTShaderSystem.h>
+#include <OgreFileSystemLayer.h>
+#include <OgreFileSystem.h>
+#include <OgreMeshManager.h>
+
+// https://github.com/ilmola/generator
+#include <generator/generator.hpp>
+
+#include "ttf2mesh/ttf2mesh.h"
+
+class KeyHandler : public OgreBites::InputListener {
+    bool keyPressed(const OgreBites::KeyboardEvent &evt) override {
+        if (evt.keysym.sym == OgreBites::SDLK_ESCAPE) {
+            Ogre::Root::getSingleton().queueEndRendering();
+        }
+        return true;
+    }
+};
+
+// https://wiki.ogre3d.org/Generating+A+Mesh
+void createColourCube() {
+    /// Create the mesh via the MeshManager
+    Ogre::MeshPtr msh = Ogre::MeshManager::getSingleton().createManual("ColourCube", "General");
+
+    /// Create one submesh
+    Ogre::SubMesh *sub = msh->createSubMesh();
+
+    const float sqrt13 = 0.577350269f; /* sqrt(1/3) */
+
+    /// Define the vertices (8 vertices, each have 3 floats for position and 3 for normal)
+    const size_t nVertices = 8;
+    const size_t vbufCount = 3 * 2 * nVertices;
+    float vertices[vbufCount] = {
+            -100.0, 100.0, -100.0,        //0 position
+            -sqrt13, sqrt13, -sqrt13,     //0 normal
+            100.0, 100.0, -100.0,         //1 position
+            sqrt13, sqrt13, -sqrt13,      //1 normal
+            100.0, -100.0, -100.0,        //2 position
+            sqrt13, -sqrt13, -sqrt13,     //2 normal
+            -100.0, -100.0, -100.0,       //3 position
+            -sqrt13, -sqrt13, -sqrt13,    //3 normal
+            -100.0, 100.0, 100.0,         //4 position
+            -sqrt13, sqrt13, sqrt13,      //4 normal
+            100.0, 100.0, 100.0,          //5 position
+            sqrt13, sqrt13, sqrt13,       //5 normal
+            100.0, -100.0, 100.0,         //6 position
+            sqrt13, -sqrt13, sqrt13,      //6 normal
+            -100.0, -100.0, 100.0,        //7 position
+            -sqrt13, -sqrt13, sqrt13,     //7 normal
+    };
+
+//    Ogre::RenderSystem *rs = Ogre::Root::getSingleton().getRenderSystem();
+    Ogre::RGBA colours[nVertices];
+    Ogre::RGBA *pColour = colours;
+    // Use render system to convert colour value since colour packing varies
+    *(pColour++) = Ogre::ColourValue(1.0, 0.0, 0.0).getAsBYTE(); //0 colour
+    *(pColour++) = Ogre::ColourValue(1.0, 1.0, 0.0).getAsBYTE(); //1 colour
+    *(pColour++) = Ogre::ColourValue(0.0, 1.0, 0.0).getAsBYTE(); //2 colour
+    *(pColour++) = Ogre::ColourValue(0.0, 0.0, 0.0).getAsBYTE(); //3 colour
+    *(pColour++) = Ogre::ColourValue(1.0, 0.0, 1.0).getAsBYTE(); //4 colour
+    *(pColour++) = Ogre::ColourValue(1.0, 1.0, 1.0).getAsBYTE(); //5 colour
+    *(pColour++) = Ogre::ColourValue(0.0, 1.0, 1.0).getAsBYTE(); //6 colour
+    *(pColour++) = Ogre::ColourValue(0.0, 0.0, 1.0).getAsBYTE(); //7 colour
+//    rs->convertColourValue(Ogre::ColourValue(1.0, 0.0, 0.0), pColour++); //0 colour
+//    rs->convertColourValue(Ogre::ColourValue(1.0, 1.0, 0.0), pColour++); //1 colour
+//    rs->convertColourValue(Ogre::ColourValue(0.0, 1.0, 0.0), pColour++); //2 colour
+//    rs->convertColourValue(Ogre::ColourValue(0.0, 0.0, 0.0), pColour++); //3 colour
+//    rs->convertColourValue(Ogre::ColourValue(1.0, 0.0, 1.0), pColour++); //4 colour
+//    rs->convertColourValue(Ogre::ColourValue(1.0, 1.0, 1.0), pColour++); //5 colour
+//    rs->convertColourValue(Ogre::ColourValue(0.0, 1.0, 1.0), pColour++); //6 colour
+//    rs->convertColourValue(Ogre::ColourValue(0.0, 0.0, 1.0), pColour++); //7 colour
+
+    /// Define 12 triangles (two triangles per cube face)
+    /// The values in this table refer to vertices in the above table
+    const size_t ibufCount = 36;
+    unsigned short faces[ibufCount] = {
+            0, 2, 3,
+            0, 1, 2,
+            1, 6, 2,
+            1, 5, 6,
+            4, 6, 5,
+            4, 7, 6,
+            0, 7, 4,
+            0, 3, 7,
+            0, 5, 1,
+            0, 4, 5,
+            2, 7, 3,
+            2, 6, 7
+    };
+
+    /// Create vertex data structure for 8 vertices shared between submeshes
+    msh->sharedVertexData = new Ogre::VertexData();
+    msh->sharedVertexData->vertexCount = nVertices;
+
+    /// Create declaration (memory format) of vertex data
+    Ogre::VertexDeclaration *decl = msh->sharedVertexData->vertexDeclaration;
+    size_t offset = 0;
+    // 1st buffer
+    decl->addElement(0, offset, Ogre::VET_FLOAT3, Ogre::VES_POSITION);
+    offset += Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3);
+    decl->addElement(0, offset, Ogre::VET_FLOAT3, Ogre::VES_NORMAL);
+    offset += Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3);
+    /// Allocate vertex buffer of the requested number of vertices (vertexCount)
+    /// and bytes per vertex (offset)
+    Ogre::HardwareVertexBufferSharedPtr vbuf =
+            Ogre::HardwareBufferManager::getSingleton().createVertexBuffer(
+                    offset, msh->sharedVertexData->vertexCount, Ogre::HardwareBuffer::HBU_STATIC_WRITE_ONLY);
+    /// Upload the vertex data to the card
+    vbuf->writeData(0, vbuf->getSizeInBytes(), vertices, true);
+
+    /// Set vertex buffer binding so buffer 0 is bound to our vertex buffer
+    Ogre::VertexBufferBinding *bind = msh->sharedVertexData->vertexBufferBinding;
+    bind->setBinding(0, vbuf);
+
+    // 2nd buffer
+    offset = 0;
+    decl->addElement(1, offset, Ogre::VET_COLOUR, Ogre::VES_DIFFUSE);
+    offset += Ogre::VertexElement::getTypeSize(Ogre::VET_COLOUR);
+    /// Allocate vertex buffer of the requested number of vertices (vertexCount)
+    /// and bytes per vertex (offset)
+    vbuf = Ogre::HardwareBufferManager::getSingleton().createVertexBuffer(
+            offset, msh->sharedVertexData->vertexCount, Ogre::HardwareBuffer::HBU_STATIC_WRITE_ONLY);
+    /// Upload the vertex data to the card
+    vbuf->writeData(0, vbuf->getSizeInBytes(), colours, true);
+
+    /// Set vertex buffer binding so buffer 1 is bound to our colour buffer
+    bind->setBinding(1, vbuf);
+
+    /// Allocate index buffer of the requested number of vertices (ibufCount)
+    Ogre::HardwareIndexBufferSharedPtr ibuf = Ogre::HardwareBufferManager::getSingleton().
+            createIndexBuffer(
+            Ogre::HardwareIndexBuffer::IT_16BIT,
+            ibufCount,
+            Ogre::HardwareBuffer::HBU_STATIC_WRITE_ONLY);
+
+    /// Upload the index data to the card
+    ibuf->writeData(0, ibuf->getSizeInBytes(), faces, true);
+
+    /// Set parameters of the submesh
+    sub->useSharedVertices = true;
+    sub->indexData->indexBuffer = ibuf;
+    sub->indexData->indexCount = ibufCount;
+    sub->indexData->indexStart = 0;
+
+    /// Set bounding information (for culling)
+    msh->_setBounds(Ogre::AxisAlignedBox(-100, -100, -100, 100, 100, 100));
+    msh->_setBoundingSphereRadius(Ogre::Math::Sqrt(3 * 100 * 100));
+
+    /// Notify -Mesh object that it has been loaded
+    msh->load();
+}
+
+
+void createBoxMesh() {
+    /// Create the mesh via the MeshManager
+    Ogre::MeshPtr msh = Ogre::MeshManager::getSingleton().createManual("ColourBoxMesh", "General");
+
+
+    gml::dvec3 sizeBox{100., 100., 100.};
+    gml::ivec3 segmentBox{1, 1, 1};
+//    auto boxMesh = generator::BoxMesh{sizeBox, segmentBox};
+    auto boxMesh = generator::SphereMesh{100.0};
+
+
+    auto vert = boxMesh.vertices();
+    std::vector<float> vertices;
+    const size_t nVertices = generator::count(vert);
+    vertices.reserve(nVertices * 3 * 2);
+    std::cout << "vertices:" << nVertices << std::endl;
+    for (const auto &vertex: vert) {
+//        vertex.normal;
+//        vertex.position;
+//        vertex.texCoord;
+        auto &p = vertex.position;
+        std::cout << "\tp:" << p << std::endl;
+        vertices.emplace_back((float) p[0]);
+        vertices.emplace_back((float) p[1]);
+        vertices.emplace_back((float) p[2]);
+        auto &n = vertex.normal;
+        std::cout << "\tn:" << n << std::endl;
+        vertices.emplace_back((float) n[0]);
+        vertices.emplace_back((float) n[1]);
+        vertices.emplace_back((float) n[2]);
+    };
+    std::cout << std::endl;
+
+
+    std::vector<Ogre::RGBA> colours;
+    colours.assign(nVertices, Ogre::ColourValue(1.0, 1.0, 1.0, 1.0).getAsBYTE());
+
+    auto tr = boxMesh.triangles();
+    std::vector<unsigned short> faces;
+    const size_t ibufCount = generator::count(tr);
+    faces.reserve(ibufCount);
+    std::cout << "faces:" << ibufCount << std::endl;
+    for (const auto &vertex: tr) {
+        auto &v = vertex.vertices;
+        std::cout << "\tv:" << v << std::endl;
+        faces.emplace_back((unsigned short) v[0]);
+        faces.emplace_back((unsigned short) v[1]);
+        faces.emplace_back((unsigned short) v[2]);
+    };
+    std::cout << std::endl;
+
+    /// Create one submesh
+    Ogre::SubMesh *sub = msh->createSubMesh();
+
+    /// Create vertex data structure for 8 vertices shared between submeshes
+    msh->sharedVertexData = new Ogre::VertexData();
+    msh->sharedVertexData->vertexCount = nVertices;
+
+    /// Create declaration (memory format) of vertex data
+    Ogre::VertexDeclaration *decl = msh->sharedVertexData->vertexDeclaration;
+    size_t offset = 0;
+    // 1st buffer
+    decl->addElement(0, offset, Ogre::VET_FLOAT3, Ogre::VES_POSITION);
+    offset += Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3);
+    decl->addElement(0, offset, Ogre::VET_FLOAT3, Ogre::VES_NORMAL);
+    offset += Ogre::VertexElement::getTypeSize(Ogre::VET_FLOAT3);
+    /// Allocate vertex buffer of the requested number of vertices (vertexCount)
+    /// and bytes per vertex (offset)
+    Ogre::HardwareVertexBufferSharedPtr vbuf =
+            Ogre::HardwareBufferManager::getSingleton().createVertexBuffer(
+                    offset, msh->sharedVertexData->vertexCount, Ogre::HardwareBuffer::HBU_STATIC_WRITE_ONLY);
+    /// Upload the vertex data to the card
+    vbuf->writeData(0, vbuf->getSizeInBytes(), vertices.data(), true);
+
+    /// Set vertex buffer binding so buffer 0 is bound to our vertex buffer
+    Ogre::VertexBufferBinding *bind = msh->sharedVertexData->vertexBufferBinding;
+    bind->setBinding(0, vbuf);
+
+    // 2nd buffer
+    offset = 0;
+    decl->addElement(1, offset, Ogre::VET_COLOUR, Ogre::VES_DIFFUSE);
+    offset += Ogre::VertexElement::getTypeSize(Ogre::VET_COLOUR);
+    /// Allocate vertex buffer of the requested number of vertices (vertexCount)
+    /// and bytes per vertex (offset)
+    vbuf = Ogre::HardwareBufferManager::getSingleton().createVertexBuffer(
+            offset, msh->sharedVertexData->vertexCount, Ogre::HardwareBuffer::HBU_STATIC_WRITE_ONLY);
+    /// Upload the vertex data to the card
+    vbuf->writeData(0, vbuf->getSizeInBytes(), colours.data(), true);
+
+    /// Set vertex buffer binding so buffer 1 is bound to our colour buffer
+    bind->setBinding(1, vbuf);
+
+    /// Allocate index buffer of the requested number of vertices (ibufCount)
+    Ogre::HardwareIndexBufferSharedPtr ibuf = Ogre::HardwareBufferManager::getSingleton().
+            createIndexBuffer(
+            Ogre::HardwareIndexBuffer::IT_16BIT,
+            ibufCount,
+            Ogre::HardwareBuffer::HBU_STATIC_WRITE_ONLY);
+
+    /// Upload the index data to the card
+    ibuf->writeData(0, ibuf->getSizeInBytes(), faces.data(), true);
+
+    /// Set parameters of the submesh
+    sub->useSharedVertices = true;
+    sub->indexData->indexBuffer = ibuf;
+    sub->indexData->indexCount = ibufCount;
+    sub->indexData->indexStart = 0;
+
+    /// Set bounding information (for culling)
+//    msh->_setBounds(Ogre::AxisAlignedBox(-100, -100, -100, 100, 100, 100));
+//    msh->_setBoundingSphereRadius(Ogre::Math::Sqrt(3 * 100 * 100));
+    {
+        auto mini = -sizeBox;
+        auto max = sizeBox;
+        Ogre::AxisAlignedBox aab{
+                (float) mini[0], (float) mini[1], (float) mini[2],
+                (float) max[0], (float) max[1], (float) max[2]
+        };
+        std::cout << "aab:" << aab << std::endl;
+        msh->_setBounds(aab);
+        std::cout << "getBounds:" << msh->getBounds() << std::endl;
+    }
+    {
+        auto q = sizeBox * sizeBox;
+        std::cout << "q:" << q << std::endl;
+        auto r = Ogre::Math::Sqrt((float) (q[0] + q[1] + q[2]));
+        std::cout << "r:" << r << std::endl;
+        msh->_setBoundingSphereRadius(r);
+    }
+
+    /// Notify -Mesh object that it has been loaded
+    msh->load();
+}
+
+void createBoxMesh2(Ogre::SceneManager *scnMgr) {
+    // https://wiki.ogre3d.org/MadMarx+Tutorial+4
+
+    gml::dvec3 sizeBox{100., 100., 100.};
+    gml::ivec3 segmentBox{1, 1, 1};
+//    auto boxMesh = generator::BoxMesh{sizeBox, segmentBox};
+//    auto boxMesh = generator::SphereMesh{100.0};
+    auto boxMesh = generator::SphereMesh{
+            100.0,
+            6,
+            6
+    };
+
+    auto manualObject = scnMgr->createManualObject("ColourBoxMeshTest2C");
+    manualObject->setDynamic(false);
+
+
+    auto vert = boxMesh.vertices();
+    const size_t nVertices = generator::count(vert);
+    std::cout << "vertices:" << nVertices << std::endl;
+
+
+    manualObject->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+    for (const auto &vertex: vert) {
+//        vertex.normal;
+//        vertex.position;
+//        vertex.texCoord;
+        auto &p = vertex.position;
+        std::cout << "\tp:" << p << std::endl;
+        auto &n = vertex.normal;
+        std::cout << "\tn:" << n << std::endl;
+        manualObject->position(p[0], p[1], p[2]);// a vertex
+        manualObject->normal(n[0], n[1], n[2]);
+        manualObject->colour(Ogre::ColourValue(1.0f, 1.0f, 1.0f, 1.0f));
+    };
+    std::cout << std::endl;
+
+
+    auto tr = boxMesh.triangles();
+    const size_t ibufCount = generator::count(tr);
+    std::cout << "faces:" << ibufCount << std::endl;
+    for (const auto &vertex: tr) {
+        auto &v = vertex.vertices;
+        std::cout << "\tv:" << v << std::endl;
+        manualObject->triangle(v[0], v[1], v[2]);
+    };
+    std::cout << std::endl;
+
+    manualObject->end();
+
+    auto msh = manualObject->convertToMesh("ColourBoxMeshTest2");
+    std::cout << "getBounds:" << msh->getBounds() << std::endl;
+    std::cout << "getBoneBoundingRadius:" << msh->getBoneBoundingRadius() << std::endl;
+    std::cout << "getBoundingSphereRadius:" << msh->getBoundingSphereRadius() << std::endl;
+
+};
+
+struct TtfMeshFactory : public std::enable_shared_from_this<TtfMeshFactory> {
+    std::shared_ptr<ttf_t> font{nullptr, ttf_free};
+
+    std::string getFontName() const {
+        auto name = std::string{font->names.full_name};
+        std::replace(name.begin(), name.end(), ' ', '_');
+        return name;
+    }
+
+    struct TtfMeshSize {
+        double x;
+        double y;
+        double z;
+
+        [[nodiscard]] Ogre::Vector3 toOgreVec3() const {
+            return Ogre::Vector3{
+                    static_cast<float>(x), static_cast<float>(y), static_cast<float>(z)
+            };
+        }
+    };
+
+    struct Info : public std::enable_shared_from_this<Info> {
+        ttf_glyph_t *glyph{nullptr};
+        std::shared_ptr<ttf_t> font{nullptr, ttf_free};
+        std::shared_ptr<ttf_mesh_t> mesh{nullptr, ttf_free_mesh};
+
+        Info(ttf_glyph_t *_glyph, std::shared_ptr<ttf_t> _font, ttf_mesh_t *_mesh)
+                : glyph(_glyph), font(std::move(_font)),
+                  mesh(std::make_shared<ttf_mesh_t>()) {
+            mesh.reset(_mesh, ttf_free_mesh);
+        }
+
+        Info(ttf_glyph_t *_glyph, std::shared_ptr<ttf_t> _font, std::shared_ptr<ttf_mesh_t> _mesh)
+                : glyph(_glyph), font(std::move(_font)), mesh(std::move(_mesh)) {}
+
+        TtfMeshSize getSize() const {
+            return {
+                    -(glyph->xbounds[0] + glyph->xbounds[1]) / 2, -glyph->ybounds[0], 0.0f
+            };
+        }
+    };
+
+    struct Info3d : public std::enable_shared_from_this<Info3d> {
+        ttf_glyph_t *glyph{nullptr};
+        std::shared_ptr<ttf_t> font{nullptr, ttf_free};
+        std::shared_ptr<ttf_mesh3d_t> mesh3d{nullptr, ttf_free_mesh3d};
+        float depth;
+
+        Info3d(ttf_glyph_t *_glyph, std::shared_ptr<ttf_t> _font, ttf_mesh3d_t *_mesh3d, float _depth)
+                : glyph(_glyph), font(std::move(_font)),
+                  mesh3d(std::make_shared<ttf_mesh3d_t>()),
+                  depth(_depth) {
+            mesh3d.reset(_mesh3d, ttf_free_mesh3d);
+        }
+
+        Info3d(ttf_glyph_t *_glyph, std::shared_ptr<ttf_t> _font, std::shared_ptr<ttf_mesh3d_t> _mesh3d, float _depth)
+                : glyph(_glyph), font(std::move(_font)), mesh3d(std::move(_mesh3d)), depth(_depth) {}
+
+        TtfMeshSize getPos() const {
+            return {
+                    -(glyph->xbounds[0] + glyph->xbounds[1]) / 2, -glyph->ybounds[0], 0.0f
+            };
+        }
+
+        TtfMeshSize getSize() const {
+            return {
+                    glyph->xbounds[0] + glyph->xbounds[1],
+                    glyph->ybounds[0] + glyph->ybounds[1],
+                    depth
+            };
+        }
+    };
+
+
+    std::map<int, std::weak_ptr<Info3d>> meshInfo3dPool;
+
+    bool load_system_font(std::vector<std::string> fontDir, std::string mask = "*") {
+        // list all system fonts by filename mask:
+
+//        ttf_t **list = ttf_list_system_fonts("DejaVuSans*|Ubuntu*|FreeSerif*|Arial*|Cour*");
+//        std::vector<std::string> fontDir{
+//                R"(d:\IDMDownloads\source-han-sans-ttf-2.002.1\)"
+//        };
+        std::unique_ptr<const char *[]> fontDirPtr{new const char *[fontDir.size()]};
+        for (size_t i = 0; i != fontDir.size(); ++i) {
+            fontDirPtr[i] = fontDir.at(i).data();
+        }
+        ttf_t **list = ttf_list_fonts(fontDirPtr.get(), fontDir.size(), mask.c_str());
+        if (list == nullptr) return false; // no memory in system
+        if (list[0] == nullptr) return false; // no fonts were found
+
+        // load the first font from the list
+
+        ttf_t *ptr = nullptr;
+        ttf_load_from_file(list[0]->filename, &ptr, false);
+        ttf_free_list(list);
+        if (ptr == nullptr) return false;
+        font.reset(ptr);
+
+        printf("font \"%s\" loaded\n", font->names.full_name);
+        return true;
+    }
+
+    std::shared_ptr<Info> choose_glyph(wchar_t symbol) {
+        // find a glyph in the font file
+
+        int index = ttf_find_glyph(font.get(), symbol);
+        if (index < 0) return nullptr;
+
+        // make mesh object from the glyph
+
+        ttf_mesh_t *out;
+        if (ttf_glyph2mesh(&font->glyphs[index], &out, TTF_QUALITY_NORMAL, TTF_FEATURES_DFLT) != TTF_DONE)
+            return nullptr;
+
+        // if successful, release the previous object and save the state
+
+        std::shared_ptr<Info> data = std::make_shared<Info>(
+                &font->glyphs[index], font, out
+        );
+        return data;
+    }
+
+    std::shared_ptr<Info3d> choose_glyph_3d(wchar_t symbol, float depth = 0.1f) {
+        if (depth <= 0) {
+            depth = 0.1f;
+        }
+        // find a glyph in the font file
+
+        int index = ttf_find_glyph(font.get(), symbol);
+        if (index < 0) return nullptr;
+        if (meshInfo3dPool.contains(index)) {
+            auto wp = meshInfo3dPool.at(index);
+            auto p = wp.lock();
+            if (p) {
+                return p;
+            }
+            // this is invalid
+            meshInfo3dPool.erase(index);
+        }
+
+        // make 3d object from the glyph
+
+        ttf_mesh3d_t *out;
+        if (ttf_glyph2mesh3d(&font->glyphs[index], &out, TTF_QUALITY_NORMAL, TTF_FEATURES_DFLT, depth) != TTF_DONE)
+            return nullptr;
+
+        // if successful, release the previous object and save the state
+
+        std::shared_ptr<Info3d> data = std::make_shared<Info3d>(
+                &font->glyphs[index], font, out, depth
+        );
+        return data;
+    }
+
+};
+
+struct TtfMeshData : public std::enable_shared_from_this<TtfMeshData> {
+    std::shared_ptr<TtfMeshFactory::Info3d> info3D;
+    Ogre::MeshPtr meshPtr;
+
+    TtfMeshData(std::shared_ptr<TtfMeshFactory::Info3d> info3D_, const Ogre::MeshPtr &meshPtr_)
+            : info3D(std::move(info3D_)), meshPtr(meshPtr_) {}
+};
+
+std::shared_ptr<TtfMeshData> createTtfMesh(Ogre::SceneManager *scnMgr,
+                                           const std::shared_ptr<TtfMeshFactory> &ttfMeshFactory,
+                                           wchar_t symbol = 'A',
+                                           float depth = 0.1f) {
+    // https://github.com/fetisov/ttf2mesh/blob/master/examples/src/simple.c
+
+    auto G = ttfMeshFactory->choose_glyph_3d(symbol, depth);
+//    glTranslatef(-(glyph->xbounds[0] + glyph->xbounds[1]) / 2, -glyph->ybounds[0], 0.0f);
+
+    if (!G) {
+        std::cout << "(!G)" << std::endl;
+        return nullptr;
+    }
+
+    auto sizeG = G->getSize();
+    G->mesh3d->nvert;
+    G->mesh3d->vert;
+    G->mesh3d->normals;
+    G->mesh3d->nfaces;
+    G->mesh3d->faces;
+
+
+    std::vector<std::string> nameList{
+            "ManualObjectName",
+            "MeshName",
+    };
+    {
+        auto fName = ttfMeshFactory->getFontName();
+        nameList.at(0) += '_';
+        nameList.at(0) += fName;
+        nameList.at(0) += symbol;
+        nameList.at(1) += '_';
+        nameList.at(1) += fName;
+        nameList.at(1) += symbol;
+    }
+
+    {
+        try {
+            auto o = scnMgr->getManualObject(nameList.at(0));
+            auto m = Ogre::MeshManager::getSingleton().getByName(nameList.at(1));
+            if (o) {
+                std::cout << "o exist : " << nameList.at(0) << std::endl;
+            }
+            if (m) {
+                std::cout << "m exist : " << nameList.at(1) << std::endl;
+                return std::make_shared<TtfMeshData>(
+                        G,
+                        m
+                );
+            }
+        } catch (...) {
+            // ignore
+        }
+    }
+
+    auto manualObject = scnMgr->createManualObject(nameList.at(0));
+    manualObject->setDynamic(false);
+
+
+    const size_t nVertices = G->mesh3d->nvert;
+    std::cout << "vertices:" << nVertices << std::endl;
+
+    manualObject->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_TRIANGLE_LIST);
+    for (size_t i = 0; i != nVertices; ++i) {
+//        vertex.normal;
+//        vertex.position;
+//        vertex.texCoord;
+
+//        auto &p = vertex.position;
+//        std::cout << "\tp:" << p << std::endl;
+//        auto &n = vertex.normal;
+//        std::cout << "\tn:" << n << std::endl;
+//        manualObject->position(p[0], p[1], p[2]);// a vertex
+//        manualObject->normal(n[0], n[1], n[2]);
+//        manualObject->colour(Ogre::ColourValue(1.0f, 1.0f, 1.0f, 1.0f));
+
+
+        manualObject->position(
+                (G->mesh3d->vert[i]).x,
+                (G->mesh3d->vert[i]).y,
+                (G->mesh3d->vert[i]).z
+        );
+        manualObject->normal(
+                (G->mesh3d->normals[i]).x,
+                (G->mesh3d->normals[i]).y,
+                (G->mesh3d->normals[i]).z
+        );
+        manualObject->colour(Ogre::ColourValue(1.0f, 1.0f, 1.0f, 1.0f));
+    };
+    std::cout << std::endl;
+
+
+    const size_t ibufCount = G->mesh3d->nfaces;
+    std::cout << "faces:" << ibufCount << std::endl;
+    for (size_t i = 0; i != ibufCount; ++i) {
+//        auto &v = vertex.vertices;
+//        std::cout << "\tv:" << v << std::endl;
+//        manualObject->triangle(v[0], v[1], v[2]);
+        manualObject->triangle(
+                (G->mesh3d->faces[i]).v1,
+                (G->mesh3d->faces[i]).v2,
+                (G->mesh3d->faces[i]).v3
+        );
+    };
+    std::cout << std::endl;
+
+
+    manualObject->end();
+
+    Ogre::MeshPtr msh = manualObject->convertToMesh(nameList.at(1));
+    std::cout << "getBounds:" << msh->getBounds() << std::endl;
+    std::cout << "getBoneBoundingRadius:" << msh->getBoneBoundingRadius() << std::endl;
+    std::cout << "getBoundingSphereRadius:" << msh->getBoundingSphereRadius() << std::endl;
+
+    return std::make_shared<TtfMeshData>(
+            G,
+            msh
+    );
+}
+
+int main() {
+    std::cout << "Hello, World!" << std::endl;
+
+    auto ttfMeshFactory = std::make_shared<TtfMeshFactory>();
+    std::vector<std::string> fontDir{
+            R"(d:\IDMDownloads\source-han-sans-ttf-2.002.1\test\)"
+    };
+    if (!ttfMeshFactory->load_system_font(fontDir, "*")) {
+        std::cout << "(!ttfMeshFactory->load_system_font())" << std::endl;
+        return -1;
+    }
+
+    std::string title{"OgreTutorialApp"};
+
+    OgreBites::ApplicationContext ctx{title};
+    ctx.getFSLayer().setHomePath({"."});
+    ctx.getFSLayer().setConfigPaths({"ogre.cfg"});
+    ctx.initApp();
+
+
+    // get a pointer to the already created root
+    Ogre::Root *root = ctx.getRoot();
+    Ogre::SceneManager *scnMgr = root->createSceneManager();
+
+    // register our scene with the RTSS
+    Ogre::RTShader::ShaderGenerator *shadergen = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
+    shadergen->addSceneManager(scnMgr);
+
+
+
+    // without light we would just get a black screen
+    Ogre::Light *light = scnMgr->createLight("MainLight");
+    light->setDiffuseColour(0.5, 0.5, 0.5);
+    light->setSpecularColour(0.5, 0.5, 0.5);
+    Ogre::SceneNode *lightNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+    lightNode->setPosition(0, 10, 15);
+    lightNode->attachObject(light);
+
+    scnMgr->setAmbientLight(Ogre::ColourValue(0, 0, 0));
+    scnMgr->setShadowTechnique(Ogre::ShadowTechnique::SHADOWTYPE_STENCIL_ADDITIVE);
+
+    Ogre::Light *spotLight = scnMgr->createLight("SpotLight");
+    spotLight->setDiffuseColour(0.5, 0.5, 0.5);
+    spotLight->setSpecularColour(0.5, 0.5, 0.5);
+    spotLight->setType(Ogre::Light::LT_SPOTLIGHT);
+    Ogre::SceneNode *spotLightNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+    spotLightNode->attachObject(spotLight);
+    spotLightNode->setDirection(-1, -1, 0);
+    spotLightNode->setPosition(Ogre::Vector3(200, 200, 0));
+    spotLight->setSpotlightRange(Ogre::Degree(35), Ogre::Degree(50));
+
+
+    Ogre::Light *directionalLight = scnMgr->createLight("DirectionalLight");
+    directionalLight->setType(Ogre::Light::LT_DIRECTIONAL);
+    directionalLight->setDiffuseColour(Ogre::ColourValue(0.6, 0.2, 0.6));
+    directionalLight->setSpecularColour(Ogre::ColourValue(0.6, 0.2, 0.6));
+    Ogre::SceneNode *directionalLightNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+    directionalLightNode->attachObject(directionalLight);
+    directionalLightNode->setDirection(Ogre::Vector3(0, -1, -1));
+    directionalLightNode->setPosition(0, 100, 100);
+
+
+    Ogre::Light *pointLight = scnMgr->createLight("PointLight");
+    pointLight->setType(Ogre::Light::LT_POINT);
+    pointLight->setDiffuseColour(0.3, 0.3, 0.3);
+    pointLight->setSpecularColour(0.3, 0.3, 0.3);
+    Ogre::SceneNode *pointLightNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+    pointLightNode->attachObject(pointLight);
+    pointLightNode->setPosition(Ogre::Vector3(0, 150, 250));
+
+
+
+
+
+
+    // also need to tell where we are
+    Ogre::SceneNode *camNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+//    camNode->setPosition(0, 0, 15);
+//    camNode->lookAt(Ogre::Vector3(0, 0, -1), Ogre::Node::TS_PARENT);
+    camNode->setPosition(200, 300, 400);
+    camNode->lookAt(Ogre::Vector3(0, 0, 0), Ogre::Node::TransformSpace::TS_WORLD);
+
+    // create the camera
+    Ogre::Camera *cam = scnMgr->createCamera("myCam");
+    cam->setNearClipDistance(5); // specific to this sample
+    cam->setAutoAspectRatio(true);
+    camNode->attachObject(cam);
+
+    // and tell it to render into the main window
+    auto vp = ctx.getRenderWindow()->addViewport(cam);
+    vp->setBackgroundColour(Ogre::ColourValue(1, 0, 1));
+
+
+    {
+        // finally something to render
+        Ogre::Entity *ent = scnMgr->createEntity("Sinbad.mesh");
+        Ogre::SceneNode *node = scnMgr->getRootSceneNode()->createChildSceneNode();
+        node->attachObject(ent);
+    }
+    {
+        // https://ogrecave.github.io/ogre/api/latest/tut__lights_cameras_shadows.html
+        Ogre::Entity *ninjaEntity = scnMgr->createEntity("ninja.mesh");
+        ninjaEntity->setCastShadows(true);
+
+        scnMgr->getRootSceneNode()->createChildSceneNode()->attachObject(ninjaEntity);
+    }
+
+    Ogre::Plane plane(Ogre::Vector3::UNIT_Y,
+    0);
+    Ogre::MeshManager::getSingleton().createPlane(
+            "ground", Ogre::RGN_DEFAULT,
+            plane,
+            1500, 1500, 20, 20,
+            true,
+            1, 5, 5,
+            Ogre::Vector3::UNIT_Z);
+    Ogre::Entity *groundEntity = scnMgr->createEntity("ground");
+    scnMgr->getRootSceneNode()->createChildSceneNode()->attachObject(groundEntity);
+    groundEntity->setCastShadows(false);
+    // rockwall.tga
+    groundEntity->setMaterialName("Rockwall");
+
+
+//    {
+//        createBoxMesh();
+//
+//        Ogre::MaterialPtr material = Ogre::MaterialManager::getSingleton().create(
+//                "ColourBoxMeshTest", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+//        material->getTechnique(0)->getPass(0)->setVertexColourTracking(Ogre::TVC_AMBIENT);
+//
+//        Ogre::Entity *thisEntity = scnMgr->createEntity("cc", "ColourBoxMesh");
+//        thisEntity->setMaterialName("ColourBoxMeshTest");
+//        Ogre::SceneNode *thisSceneNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+//        thisSceneNode->setPosition(-35, 0, 0);
+////        thisSceneNode->rotate(Ogre::Vector3{0, 1, 0}, Ogre::Degree(90.0));
+//        thisSceneNode->attachObject(thisEntity);
+//
+//    }
+
+//    {
+//        createBoxMesh2(scnMgr);
+//
+//        Ogre::MaterialPtr material = Ogre::MaterialManager::getSingleton().create(
+//                "ColourBoxMeshTest", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+//        material->getTechnique(0)->getPass(0)->setVertexColourTracking(Ogre::TVC_AMBIENT);
+//
+//        Ogre::Entity *thisEntity = scnMgr->createEntity("cc", "ColourBoxMeshTest2");
+//        thisEntity->setMaterialName("ColourBoxMeshTest");
+//        Ogre::SceneNode *thisSceneNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+//        thisSceneNode->setPosition(-35, 0, 0);
+//        thisSceneNode->rotate(Ogre::Vector3{1, 1, 0}, Ogre::Degree(90.0));
+//        thisSceneNode->attachObject(thisEntity);
+//
+//    }
+
+
+
+//    {
+//        auto info = createTtfMesh(scnMgr, ttfMeshFactory, L'中', 0.1);
+//
+//        if (!info) {
+//            return -2;
+//        }
+//
+//        Ogre::MaterialPtr material = Ogre::MaterialManager::getSingleton().create(
+//                "ColourTtfMeshTest", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+//        material->getTechnique(0)->getPass(0)->setVertexColourTracking(Ogre::TVC_AMBIENT);
+//
+//        Ogre::Entity *thisEntity = scnMgr->createEntity(info->meshPtr);
+//        thisEntity->setMaterialName("ColourBoxMeshTest");
+//        Ogre::SceneNode *thisSceneNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+//        Ogre::Vector3 scale{100, 100, 100};
+//        std::cout << "getPos:" << info->info3D->getPos().toOgreVec3() << std::endl;
+//        std::cout << "getSize:" << info->info3D->getSize().toOgreVec3() << std::endl;
+//        std::cout << "getSize * scale:" << info->info3D->getSize().toOgreVec3() * scale << std::endl;
+//        thisSceneNode->setPosition(
+//                info->info3D->getPos().toOgreVec3()
+//                * scale
+//                + Ogre::Vector3{0, 0, 100}
+//        );
+//        thisSceneNode->setScale(scale);
+//        thisSceneNode->showBoundingBox(true);
+////        thisSceneNode->rotate(Ogre::Vector3{1, 0, 0}, Ogre::Degree(90.0));
+//        thisSceneNode->createChildSceneNode()->attachObject(thisEntity);
+//    }
+
+    {
+        std::vector<decltype(createTtfMesh(scnMgr, ttfMeshFactory, L'中', 0.1))> ttfMeshList1{
+        };
+        for (auto &s: std::wstring{L"中华人民共和国万岁"}) {
+            ttfMeshList1.push_back(createTtfMesh(scnMgr, ttfMeshFactory, s, 0.1));
+        }
+        std::vector<decltype(createTtfMesh(scnMgr, ttfMeshFactory, L'中', 0.1))> ttfMeshList2{
+        };
+        for (auto &s: std::wstring{L"世界人民大团结万岁"}) {
+            ttfMeshList2.push_back(createTtfMesh(scnMgr, ttfMeshFactory, s, 0.1));
+        }
+
+        Ogre::MaterialPtr material = Ogre::MaterialManager::getSingleton().create(
+                "ColourTtfMeshTest2", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+        material->getTechnique(0)->getPass(0)->setVertexColourTracking(Ogre::TVC_AMBIENT);
+
+        Ogre::SceneNode *thisSceneNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+        float scaleSize = 50;
+        Ogre::Vector3 scale{scaleSize, scaleSize, scaleSize};
+
+        Ogre::Vector3 sizeTotal1{0, 0, 0};
+        Ogre::Vector3 basePos{0, 0, 0};
+        for (auto &info: ttfMeshList1) {
+
+            Ogre::Entity *thisEntity = scnMgr->createEntity(info->meshPtr);
+            thisEntity->setMaterial(material);
+
+
+            std::cout << "getPos:" << info->info3D->getPos().toOgreVec3() << std::endl;
+            std::cout << "getSize:" << info->info3D->getSize().toOgreVec3() << std::endl;
+            std::cout << "getSize * scale:" << info->info3D->getSize().toOgreVec3() * scale << std::endl;
+            auto thisNode = thisSceneNode->createChildSceneNode(
+                    Ogre::Vector3{sizeTotal1.x, 0, 0} + basePos
+            );
+            auto size = info->info3D->getSize().toOgreVec3();
+            sizeTotal1 = Ogre::Vector3{sizeTotal1.x + size.x, std::max(sizeTotal1.y, size.y), sizeTotal1.z};
+            thisNode->attachObject(thisEntity);
+        }
+        Ogre::Vector3 sizeTotal2{0, 0, 0};
+        basePos = {0, -(sizeTotal1.y * 1.5f), 0};
+        for (auto &info: ttfMeshList2) {
+
+            Ogre::Entity *thisEntity = scnMgr->createEntity(info->meshPtr);
+            thisEntity->setMaterial(material);
+
+
+            std::cout << "getPos:" << info->info3D->getPos().toOgreVec3() << std::endl;
+            std::cout << "getSize:" << info->info3D->getSize().toOgreVec3() << std::endl;
+            std::cout << "getSize * scale:" << info->info3D->getSize().toOgreVec3() * scale << std::endl;
+            auto thisNode = thisSceneNode->createChildSceneNode(
+                    Ogre::Vector3{sizeTotal2.x, 0, 0} + basePos
+            );
+            auto size = info->info3D->getSize().toOgreVec3();
+            sizeTotal2 = Ogre::Vector3{sizeTotal2.x + size.x, std::max(sizeTotal2.y, size.y), sizeTotal2.z};
+            thisNode->attachObject(thisEntity);
+        }
+        Ogre::Vector3 sizeTotal{
+                std::max(sizeTotal1.x, sizeTotal2.x),
+                std::max(sizeTotal1.y, sizeTotal2.y + (-basePos.y)),
+                std::max(sizeTotal1.z, sizeTotal2.z),
+        };
+
+        std::cout << "sizeTotal:" << sizeTotal << std::endl;
+        thisSceneNode->setPosition(
+                -Ogre::Vector3{sizeTotal.x, 0, 0} / 2 * scale
+                + Ogre::Vector3{0, 20, 0}
+                + Ogre::Vector3{0, +(-basePos.y) * scaleSize, 0}
+                + Ogre::Vector3{0, 0, 100}
+        );
+        thisSceneNode->setScale(scale);
+        thisSceneNode->rotate(Ogre::Vector3{1, 0, 0}, Ogre::Degree(-45.0));
+//        thisSceneNode->showBoundingBox(true);
+
+    }
+
+
+//    {
+//        createColourCube();
+//
+//        Ogre::MaterialPtr material = Ogre::MaterialManager::getSingleton().create(
+//                "ColourTest", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+//        material->getTechnique(0)->getPass(0)->setVertexColourTracking(Ogre::TVC_AMBIENT);
+//
+//        Ogre::Entity *thisEntity = scnMgr->createEntity("cc", "ColourCube");
+//        thisEntity->setMaterialName("ColourTest");
+//        Ogre::SceneNode *thisSceneNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+//        thisSceneNode->setPosition(-35, 0, 0);
+//        thisSceneNode->attachObject(thisEntity);
+//    }
+
+    // register for input events
+    KeyHandler keyHandler;
+    ctx.addInputListener(&keyHandler);
+
+    ctx.getRoot()->startRendering();
+    ctx.closeApp();
+
+    return 0;
+}
