@@ -44,15 +44,10 @@ public:
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
-        // handle DPI scaling
-        float vpScale = Ogre::OverlayManager::getSingleton().getPixelRatio();
-        io.FontGlobalScale = std::round(vpScale); // default font does not work with fractional scaling
 
         // Setup Dear ImGui style
         ImGui::StyleColorsDark();
 //        ImGui::StyleColorsLight();
-
-        ImGui::GetStyle().ScaleAllSizes(vpScale);
 
         if (false) {
             ImFontConfig config;
@@ -129,13 +124,6 @@ public:
                 show_another_window = false;
             ImGui::End();
         }
-    }
-
-    void postRenderTargetUpdate(const Ogre::RenderTargetEvent &evt) override {
-
-//        ImGui::ShowDemoWindow();
-//        ImGui::Render();
-//        ImGui::EndFrame();
     }
 
 };
@@ -1046,11 +1034,17 @@ int main() {
 
     auto imGuiOverlay = std::make_unique<Ogre::ImGuiOverlay>();
 
+    // handle DPI scaling
+    float vpScale = Ogre::OverlayManager::getSingleton().getPixelRatio();
+    ImGui::GetIO().FontGlobalScale = std::round(vpScale); // default font does not work with fractional scaling
+    ImGui::GetStyle().ScaleAllSizes(vpScale);
+
     imGuiOverlay->setZOrder(300);
     imGuiOverlay->show();
     // now owned by OverlayManager
     Ogre::OverlayManager::getSingleton().addOverlay(imGuiOverlay.release());
 
+    // must call this to register ImGuiOverlay
     scnMgr->addRenderQueueListener(&Ogre::OverlaySystem::getSingleton());
 
     auto imGuiInputListener = std::make_unique<OgreBites::ImGuiInputListener>();
