@@ -13,6 +13,8 @@
 #include <OgreMeshManager.h>
 #include <OgreCameraMan.h>
 #include <OgreCamera.h>
+#include <OgreImGuiOverlay.h>
+#include <OgreWindowEventUtilities.h>
 
 // https://github.com/ilmola/generator
 #include <generator/generator.hpp>
@@ -931,12 +933,28 @@ int main() {
 //        thisSceneNode->attachObject(thisEntity);
 //    }
 
+
+//    Ogre::ImGuiOverlay{};
+
     // register for input events
     KeyHandler keyHandler;
     ctx.addInputListener(&keyHandler);
     ctx.addInputListener(&*cameraMan);
 
     ctx.getRoot()->startRendering();
+
+    Ogre::Root::getSingleton().getRenderSystem()->_initRenderTargets();
+    ctx.getRoot()->clearEventTimes();
+
+    while (!ctx.getRoot()->endRenderingQueued()) {
+        ctx.getRoot()->renderOneFrame();
+//        if (ctx.getRenderWindow()->isActive() || ctx.getRenderWindow()->isVisible()) {
+//            if (!ctx.getRoot()->renderOneFrame()) {
+//                break;
+//            }
+//        }
+    }
+
     ctx.closeApp();
 
     return 0;
