@@ -11,6 +11,8 @@
 #include <OgreFileSystemLayer.h>
 #include <OgreFileSystem.h>
 #include <OgreMeshManager.h>
+#include <OgreCameraMan.h>
+#include <OgreCamera.h>
 
 // https://github.com/ilmola/generator
 #include <generator/generator.hpp>
@@ -698,6 +700,16 @@ int main() {
     directionalLightNode->setPosition(0, 100, 100);
 
 
+    Ogre::Light *directionalLight2 = scnMgr->createLight("DirectionalLight2");
+    directionalLight2->setType(Ogre::Light::LT_DIRECTIONAL);
+    directionalLight2->setDiffuseColour(Ogre::ColourValue(0.2, 0.8, 0.6));
+    directionalLight2->setSpecularColour(Ogre::ColourValue(0.2, 0.8, 0.6));
+    Ogre::SceneNode *directionalLightNode2 = scnMgr->getRootSceneNode()->createChildSceneNode();
+    directionalLightNode2->attachObject(directionalLight2);
+    directionalLightNode2->setDirection(Ogre::Vector3(0, -1, 1));
+    directionalLightNode2->setPosition(0, 100, -100);
+
+
     Ogre::Light *pointLight = scnMgr->createLight("PointLight");
     pointLight->setType(Ogre::Light::LT_POINT);
     pointLight->setDiffuseColour(0.3, 0.3, 0.3);
@@ -723,6 +735,13 @@ int main() {
     cam->setNearClipDistance(5); // specific to this sample
     cam->setAutoAspectRatio(true);
     camNode->attachObject(cam);
+
+    // https://stackoverflow.com/questions/23474492/orbit-camera-implementation-in-ogre
+    // https://ogrecave.github.io/ogre/api/latest/class_ogre_bites_1_1_camera_man.html
+    auto cameraMan = std::make_unique<OgreBites::CameraMan>(camNode);
+    cameraMan->setStyle(OgreBites::CS_ORBIT);
+//    cameraMan->setStyle(OgreBites::CS_FREELOOK);
+//    cameraMan->setStyle(OgreBites::CS_MANUAL);
 
     // and tell it to render into the main window
     auto vp = ctx.getRenderWindow()->addViewport(cam);
@@ -915,6 +934,7 @@ int main() {
     // register for input events
     KeyHandler keyHandler;
     ctx.addInputListener(&keyHandler);
+    ctx.addInputListener(&*cameraMan);
 
     ctx.getRoot()->startRendering();
     ctx.closeApp();
