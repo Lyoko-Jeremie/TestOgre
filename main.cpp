@@ -14,7 +14,9 @@
 #include <OgreCameraMan.h>
 #include <OgreCamera.h>
 #include <OgreImGuiOverlay.h>
-#include <OgreWindowEventUtilities.h>
+#include <OgreImGuiInputListener.h>
+#include <OgreOverlayManager.h>
+#include <OgreOverlaySystem.h>
 
 // https://github.com/ilmola/generator
 #include <generator/generator.hpp>
@@ -28,6 +30,114 @@ class KeyHandler : public OgreBites::InputListener {
         }
         return true;
     }
+};
+
+
+class ImGuiDrawHandler : public Ogre::RenderTargetListener {
+
+public:
+
+    ImGuiIO &io;
+
+    // must create after create `Ogre::ImGuiOverlay`
+    ImGuiDrawHandler() : io(ImGui::GetIO()) {
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+        // handle DPI scaling
+        float vpScale = Ogre::OverlayManager::getSingleton().getPixelRatio();
+        io.FontGlobalScale = std::round(vpScale); // default font does not work with fractional scaling
+
+        // Setup Dear ImGui style
+        ImGui::StyleColorsDark();
+//        ImGui::StyleColorsLight();
+
+        ImGui::GetStyle().ScaleAllSizes(vpScale);
+
+        if (false) {
+            ImFontConfig config;
+//            config.OversampleH = 2;
+//            config.OversampleV = 1;
+            config.GlyphExtraSpacing.x = 1.0f;
+            std::vector<ImFont *> fontsList{
+//            io.Fonts->AddFontDefault(),
+                    io.Fonts->AddFontFromFileTTF(R"(D:\IDMDownloads\SourceHanSansCN\SourceHanSansCN-Normal.otf)", 18.0f,
+                                                 &config, io.Fonts->GetGlyphRangesChineseFull()),
+//                    io.Fonts->AddFontFromFileTTF(ppp->config().font_path.c_str(), 21.0f,
+//                                                 &config, io.Fonts->GetGlyphRangesChineseFull()),
+            };
+            io.Fonts->Build();
+            for (const auto &a: fontsList) {
+//                if (!a) {
+//                    // cannot read fonts
+//                    clear();
+//                    OwlImGuiService::safe_exit();
+//                    return -2;
+//                }
+                std::cout << a->GetDebugName() << " " << a << " " << a->IsLoaded() << std::endl;
+                a->ContainerAtlas->Build();
+            }
+            io.FontDefault = fontsList.at(0);
+        }
+    }
+
+    // Our state
+    bool show_demo_window = true;
+    bool show_another_window = false;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    void preRenderTargetUpdate(const Ogre::RenderTargetEvent &evt) override {
+
+        Ogre::ImGuiOverlay::NewFrame();
+
+        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+        if (show_demo_window)
+            ImGui::ShowDemoWindow(&show_demo_window);
+
+        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+        {
+            static float f = 0.0f;
+            static int counter = 0;
+
+            ImGui::Begin(
+                    "Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+            ImGui::Text(
+                    "This is some useful text.");               // Display some text (you can use a format strings too)
+            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+            ImGui::Checkbox("Another Window", &show_another_window);
+
+            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+            ImGui::ColorEdit3("clear color", (float *) &clear_color); // Edit 3 floats representing a color
+
+            if (ImGui::Button(
+                    "Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                counter++;
+            ImGui::SameLine();
+            ImGui::Text("counter = %d", counter);
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::End();
+        }
+
+        // 3. Show another simple window.
+        if (show_another_window) {
+            ImGui::Begin("Another Window",
+                         &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            ImGui::Text("Hello from another window!");
+            if (ImGui::Button("Close Me"))
+                show_another_window = false;
+            ImGui::End();
+        }
+    }
+
+    void postRenderTargetUpdate(const Ogre::RenderTargetEvent &evt) override {
+
+//        ImGui::ShowDemoWindow();
+//        ImGui::Render();
+//        ImGui::EndFrame();
+    }
+
 };
 
 // https://wiki.ogre3d.org/Generating+A+Mesh
@@ -934,14 +1044,28 @@ int main() {
 //    }
 
 
-//    Ogre::ImGuiOverlay{};
+    auto imGuiOverlay = std::make_unique<Ogre::ImGuiOverlay>();
+
+    imGuiOverlay->setZOrder(300);
+    imGuiOverlay->show();
+    // now owned by OverlayManager
+    Ogre::OverlayManager::getSingleton().addOverlay(imGuiOverlay.release());
+
+    scnMgr->addRenderQueueListener(&Ogre::OverlaySystem::getSingleton());
+
+    auto imGuiInputListener = std::make_unique<OgreBites::ImGuiInputListener>();
+    ctx.addInputListener(&*imGuiInputListener);
+
+
+    ImGuiDrawHandler imGuiDrawHandler;
+    ctx.getRenderWindow()->addListener(&imGuiDrawHandler);
 
     // register for input events
     KeyHandler keyHandler;
     ctx.addInputListener(&keyHandler);
     ctx.addInputListener(&*cameraMan);
 
-    ctx.getRoot()->startRendering();
+//    ctx.getRoot()->startRendering();
 
     Ogre::Root::getSingleton().getRenderSystem()->_initRenderTargets();
     ctx.getRoot()->clearEventTimes();
