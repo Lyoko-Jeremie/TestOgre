@@ -20,7 +20,7 @@
 #include <OgreOverlaySystem.h>
 
 //#include "OgreUnifiedHighLevelGpuProgram.h"
-#include "./Bullet/include/OgreBullet.h"
+#include "Bullet/OgreBullet.h"
 //#include "LinearMath/btVector3.h"
 //#include "BulletCollision/NarrowPhaseCollision/btManifoldPoint.h"
 //#include "BulletCollision/CollisionDispatch/btCollisionObject.h"

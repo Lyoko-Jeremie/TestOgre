@@ -108,10 +108,10 @@ list(TRANSFORM BULLET_LIBRARIES APPEND ".lib")
 list(TRANSFORM BULLET_LIBRARIES PREPEND "${BULLET_LIBRARY_DIRS}/")
 
 set(OgreBullet
-        ./Bullet/include/OgreBullet.h
-        ./Bullet/src/OgreBullet.cpp
+        ./Bullet/OgreBullet.h
+        ./Bullet/OgreBullet.cpp
         )
-include_directories(./Bullet/include)
+include_directories(./Bullet)
 
 include_directories(${BULLET_INCLUDE_DIRS})
 link_directories(${BULLET_LIBRARY_DIRS})
