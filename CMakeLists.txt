@@ -67,14 +67,14 @@ set(OGRE_DIR h:/CodeLib/ogre-build-msvc-debug/sdk/CMake)
 
 find_package(OGRE REQUIRED COMPONENTS Bites Overlay CONFIG)
 
-message("OGRE_STATIC : ${OGRE_STATIC}")
-message("OGRE_Bites_FOUND : ${OGRE_Bites_FOUND}")
-message("OGRE_PLUGIN_DIR : ${OGRE_PLUGIN_DIR}")
-message("OGRE_MEDIA_DIR : ${OGRE_MEDIA_DIR}")
-message("OGRE_CONFIG_DIR : ${OGRE_CONFIG_DIR}")
-message("OGRE_INCLUDE_DIRS : ${OGRE_INCLUDE_DIRS}")
-message("OGRE_LIBRARIES : ${OGRE_LIBRARIES}")
-message("OGRE_LIBRARY_DIRS : ${OGRE_LIBRARY_DIRS}")
+message(STATUS "OGRE_STATIC : ${OGRE_STATIC}")
+message(STATUS "OGRE_Bites_FOUND : ${OGRE_Bites_FOUND}")
+message(STATUS "OGRE_PLUGIN_DIR : ${OGRE_PLUGIN_DIR}")
+message(STATUS "OGRE_MEDIA_DIR : ${OGRE_MEDIA_DIR}")
+message(STATUS "OGRE_CONFIG_DIR : ${OGRE_CONFIG_DIR}")
+message(STATUS "OGRE_INCLUDE_DIRS : ${OGRE_INCLUDE_DIRS}")
+message(STATUS "OGRE_LIBRARIES : ${OGRE_LIBRARIES}")
+message(STATUS "OGRE_LIBRARY_DIRS : ${OGRE_LIBRARY_DIRS}")
 
 #add_definitions(-D_MT)
 
@@ -154,6 +154,9 @@ link_directories(${Boost_LIBRARY_DIRS})
 target_link_libraries(${ProjectMainName} ${Boost_LIBRARIES})
 
 if (WIN32)
+    # https://github.com/boostorg/log/issues/28
+#    add_compile_definitions(BOOST_USE_WINAPI_VERSION=0x0501)
+    add_compile_definitions(BOOST_USE_WINAPI_VERSION=0x0600)
     target_link_libraries(${ProjectMainName} wsock32 ws2_32 crypt32)
 else (WIN32)
 endif (WIN32)
