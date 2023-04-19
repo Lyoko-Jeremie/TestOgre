@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <array>
+#include <memory>
 #include <utility>
 #include <vector>
 #include <memory>
@@ -17,6 +18,18 @@
 #include <OgreImGuiInputListener.h>
 #include <OgreOverlayManager.h>
 #include <OgreOverlaySystem.h>
+
+//#include "OgreUnifiedHighLevelGpuProgram.h"
+#include "./Bullet/include/OgreBullet.h"
+//#include "LinearMath/btVector3.h"
+//#include "BulletCollision/NarrowPhaseCollision/btManifoldPoint.h"
+//#include "BulletCollision/CollisionDispatch/btCollisionObject.h"
+
+
+#include <boost/pool/simple_segregated_storage.hpp>
+#include <boost/pool/pool_alloc.hpp>
+
+
 
 // https://github.com/ilmola/generator
 #include <generator/generator.hpp>
@@ -127,6 +140,46 @@ public:
     }
 
 };
+
+class BulletHandler : public Ogre::RenderTargetListener {
+public:
+
+    // TODO use memory pool
+    std::unique_ptr<Ogre::Bullet::DynamicsWorld> mDynWorld;
+    std::unique_ptr<Ogre::Bullet::DebugDrawer> mDbgDraw;
+    std::unique_ptr<btStaticPlaneShape> btStaticPlaneShape_;
+    std::unique_ptr<btMotionState> btStaticPlaneMotionState_;
+    std::unique_ptr<btRigidBody> btStaticPlaneRigidBody_;
+
+    // Physics world and debug drawing
+    BulletHandler(Ogre::SceneManager *scnMgr)
+            : mDynWorld(std::make_unique<Ogre::Bullet::DynamicsWorld>(Ogre::Vector3(0, -9.8, 0))),
+              mDbgDraw(std::make_unique<Ogre::Bullet::DebugDrawer>(
+                      scnMgr->getRootSceneNode(),
+                      mDynWorld->getBtWorld())),
+              btStaticPlaneShape_(std::make_unique<btStaticPlaneShape>(btVector3(0, 1, 0), 0)),
+              btStaticPlaneMotionState_(std::make_unique<btDefaultMotionState>()),
+              btStaticPlaneRigidBody_(std::make_unique<btRigidBody>(
+                      btRigidBody::btRigidBodyConstructionInfo{
+                              0, btStaticPlaneMotionState_.get(), btStaticPlaneShape_.get()
+                      }
+              )) {
+
+//        mDynWorld->addRigidBody(5, player, Ogre::Bullet::CT_SPHERE);
+//        mDynWorld->addRigidBody(0, level, Ogre::Bullet::CT_TRIMESH);
+
+        mDynWorld->getBtWorld()->addRigidBody(btStaticPlaneRigidBody_.get());
+    }
+
+    void preRenderTargetUpdate(const Ogre::RenderTargetEvent &evt) override {
+
+//        mDynWorld->getBtWorld()->stepSimulation(evt.source., 10);
+        mDbgDraw->update();
+
+    }
+
+};
+
 
 // https://wiki.ogre3d.org/Generating+A+Mesh
 void createColourCube() {
@@ -740,6 +793,18 @@ std::shared_ptr<TtfMeshData> createTtfMesh(Ogre::SceneManager *scnMgr,
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
+
+    boost::simple_segregated_storage memory_pool{};
+
+//    btAlignedAllocSetCustomAligned(
+//            [&memory_pool](size_t size, int alignment) {
+////                return memory_pool.malloc_n(size, size);
+//                return memory_pool.malloc(size, size);
+//            },
+//            [&memory_pool](void *memblock) {
+//                return memory_pool.free(memblock);
+//            }
+//    );
 
     auto ttfMeshFactory = std::make_shared<TtfMeshFactory>();
     std::vector<std::string> fontDir{
