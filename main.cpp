@@ -29,12 +29,222 @@
 #include <boost/pool/simple_segregated_storage.hpp>
 #include <boost/pool/pool_alloc.hpp>
 
+#include <boost/log/trivial.hpp>
+#include <boost/assert.hpp>
+
+namespace boost {
+    void assertion_failed(char const *expr, char const *function, char const *file, long line) {
+        BOOST_LOG_TRIVIAL(error)
+            << "assertion_failed : [" << expr << "]"
+            << " on function [" << function << "]"
+            << " on file [" << file << "]"
+            << " at line [" << line << "]";
+        std::abort();
+    }
+
+    void assertion_failed_msg(char const *expr, char const *msg, char const *function, char const *file, long line) {
+        BOOST_LOG_TRIVIAL(error)
+            << "assertion_failed_msg : [" << expr << "]"
+            << " msg [" << msg << "]"
+            << " on function [" << function << "]"
+            << " on file [" << file << "]"
+            << " at line [" << line << "]";
+        std::abort();
+    }
+}
 
 
 // https://github.com/ilmola/generator
 #include <generator/generator.hpp>
 
 #include "ttf2mesh/ttf2mesh.h"
+
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/make_unique.hpp>
+
+
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/tag.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/random_access_index.hpp>
+#include <boost/multi_index/composite_key.hpp>
+#include <boost/multi_index/key.hpp>
+
+struct CollisionShape {
+    static std::atomic_int idGenerator;
+
+    int id;
+    struct ID {
+    };
+    std::string name;
+    struct NAME {
+    };
+    std::string uuid;
+    struct UUID {
+    };
+
+    boost::shared_ptr<btCollisionShape> ptr;
+
+    explicit CollisionShape(
+            boost::shared_ptr<btCollisionShape> ptr_
+    ) : id(++idGenerator), ptr(std::move(ptr_)) {
+        ptr->setUserIndex(id);
+    }
+
+    auto operator<=>(const CollisionShape &o) const {
+        return id <=> o.id;
+    }
+};
+
+std::atomic_int CollisionShape::idGenerator{1};
+
+
+typedef boost::multi_index_container<
+        CollisionShape,
+        boost::multi_index::indexed_by<
+                boost::multi_index::sequenced<>,
+                boost::multi_index::ordered_unique<
+                        boost::multi_index::identity<CollisionShape>
+                >,
+                boost::multi_index::hashed_non_unique<
+                        boost::multi_index::tag<CollisionShape::NAME>,
+                        boost::multi_index::member<CollisionShape, std::string, &CollisionShape::name>
+                >,
+                boost::multi_index::hashed_non_unique<
+                        boost::multi_index::tag<CollisionShape::UUID>,
+                        boost::multi_index::member<CollisionShape, std::string, &CollisionShape::uuid>
+                >,
+                boost::multi_index::hashed_unique<
+                        boost::multi_index::tag<CollisionShape::ID>,
+                        boost::multi_index::member<CollisionShape, int, &CollisionShape::id>
+                >,
+                boost::multi_index::random_access<>
+        >
+> CollisionShapeContainer;
+
+struct RigidObject {
+    static std::atomic_int idGenerator;
+
+    int id;
+    struct ID {
+    };
+    std::string name;
+    struct NAME {
+    };
+    std::string uuid;
+    struct UUID {
+    };
+
+    boost::shared_ptr<btRigidBody> ptr;
+    boost::shared_ptr<btMotionState> ptrMS;
+
+    RigidObject(
+            boost::shared_ptr<btRigidBody> ptr_,
+            boost::shared_ptr<btMotionState> ptrMS_
+    ) : id(++idGenerator), ptr(std::move(ptr_)), ptrMS(std::move(ptrMS_)) {
+        ptr->setUserIndex(id);
+    }
+
+    auto operator<=>(const RigidObject &o) const {
+        return id <=> o.id;
+    }
+};
+
+std::atomic_int RigidObject::idGenerator{1};
+
+typedef boost::multi_index_container<
+        RigidObject,
+        boost::multi_index::indexed_by<
+                boost::multi_index::sequenced<>,
+                boost::multi_index::ordered_unique<
+                        boost::multi_index::identity<RigidObject>
+                >,
+                boost::multi_index::hashed_non_unique<
+                        boost::multi_index::tag<RigidObject::NAME>,
+                        boost::multi_index::member<RigidObject, std::string, &RigidObject::name>
+                >,
+                boost::multi_index::hashed_non_unique<
+                        boost::multi_index::tag<RigidObject::UUID>,
+                        boost::multi_index::member<RigidObject, std::string, &RigidObject::uuid>
+                >,
+                boost::multi_index::hashed_unique<
+                        boost::multi_index::tag<RigidObject::ID>,
+                        boost::multi_index::member<RigidObject, int, &RigidObject::id>
+                >,
+                boost::multi_index::random_access<>
+        >
+> RigidObjectContainer;
+
+struct CollisionState {
+    enum class State {
+        start,
+        collision,
+        end,
+    };
+    int idA;
+    struct IDA {
+    };
+    int idB;
+    struct IDB {
+    };
+    struct ID {
+    };
+
+    State state;
+    std::chrono::steady_clock::time_point lastCheckTime;
+
+    CollisionState(
+            int idA_,
+            int idB_,
+            State state_,
+            std::chrono::steady_clock::time_point lastCheckTime_
+    ) : idA(idA_), idB(idB_), state(state_), lastCheckTime(lastCheckTime_) {}
+
+
+//    bool operator==(const CollisionState &o) const {
+//        return idA == o.idA && idB == o.idB;
+//    }
+    auto operator<=>(const CollisionState &o) const {
+        if (idA == o.idA) {
+            return idB <=> o.idB;
+        }
+        return idA <=> o.idA;
+    }
+};
+
+typedef boost::multi_index_container<
+        CollisionState,
+        boost::multi_index::indexed_by<
+                boost::multi_index::sequenced<>,
+                boost::multi_index::ordered_unique<
+                        boost::multi_index::identity<CollisionState>
+                >,
+                boost::multi_index::hashed_unique<
+                        boost::multi_index::tag<CollisionState::ID>,
+                        boost::multi_index::composite_key<
+                                CollisionState,
+                                boost::multi_index::member<CollisionState, int, &CollisionState::idA>,
+                                boost::multi_index::member<CollisionState, int, &CollisionState::idB>
+                        >
+                >,
+                boost::multi_index::hashed_non_unique<
+                        boost::multi_index::tag<CollisionState::IDA>,
+                        boost::multi_index::member<CollisionState, int, &CollisionState::idA>
+                >,
+                boost::multi_index::hashed_non_unique<
+                        boost::multi_index::tag<CollisionState::IDB>,
+                        boost::multi_index::member<CollisionState, int, &CollisionState::idB>
+                >,
+                boost::multi_index::random_access<>
+        >
+> CollisionStateContainer;
+
 
 class KeyHandler : public OgreBites::InputListener {
     bool keyPressed(const OgreBites::KeyboardEvent &evt) override {
@@ -46,7 +256,7 @@ class KeyHandler : public OgreBites::InputListener {
 };
 
 
-class ImGuiDrawHandler : public Ogre::RenderTargetListener {
+class ImGuiDrawHandler : public Ogre::FrameListener {
 
 public:
 
@@ -94,7 +304,7 @@ public:
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    void preRenderTargetUpdate(const Ogre::RenderTargetEvent &evt) override {
+    bool frameStarted(const Ogre::FrameEvent &evt) override {
 
         Ogre::ImGuiOverlay::NewFrame();
 
@@ -137,11 +347,13 @@ public:
                 show_another_window = false;
             ImGui::End();
         }
+
+        return true;
     }
 
 };
 
-class BulletHandler : public Ogre::RenderTargetListener {
+class BulletManager : public boost::enable_shared_from_this<BulletManager> {
 public:
 
     // TODO use memory pool
@@ -151,8 +363,11 @@ public:
     std::unique_ptr<btMotionState> btStaticPlaneMotionState_;
     std::unique_ptr<btRigidBody> btStaticPlaneRigidBody_;
 
-    // Physics world and debug drawing
-    BulletHandler(Ogre::SceneManager *scnMgr)
+    std::unique_ptr<CollisionStateContainer> collisionStateContainer{std::make_unique<CollisionStateContainer>()};
+    std::unique_ptr<CollisionShapeContainer> collisionShapeContainer{std::make_unique<CollisionShapeContainer>()};
+    std::unique_ptr<RigidObjectContainer> rigidObjectContainer{std::make_unique<RigidObjectContainer>()};
+
+    BulletManager(Ogre::SceneManager *scnMgr)
             : mDynWorld(std::make_unique<Ogre::Bullet::DynamicsWorld>(Ogre::Vector3(0, -9.8, 0))),
               mDbgDraw(std::make_unique<Ogre::Bullet::DebugDrawer>(
                       scnMgr->getRootSceneNode(),
@@ -165,17 +380,27 @@ public:
                       }
               )) {
 
-//        mDynWorld->addRigidBody(5, player, Ogre::Bullet::CT_SPHERE);
-//        mDynWorld->addRigidBody(0, level, Ogre::Bullet::CT_TRIMESH);
+        //        mDynWorld->addRigidBody(5, player, Ogre::Bullet::CT_SPHERE);
+        //        mDynWorld->addRigidBody(0, level, Ogre::Bullet::CT_TRIMESH);
 
         mDynWorld->getBtWorld()->addRigidBody(btStaticPlaneRigidBody_.get());
     }
 
-    void preRenderTargetUpdate(const Ogre::RenderTargetEvent &evt) override {
+};
 
-//        mDynWorld->getBtWorld()->stepSimulation(evt.source., 10);
-        mDbgDraw->update();
+class BulletHandler : public Ogre::FrameListener {
+public:
 
+    boost::shared_ptr<BulletManager> bulletManager;
+
+    explicit BulletHandler(Ogre::SceneManager *scnMgr) : bulletManager(boost::make_shared<BulletManager>(scnMgr)) {}
+
+    bool frameStarted(const Ogre::FrameEvent &evt) override {
+
+        bulletManager->mDynWorld->getBtWorld()->stepSimulation(evt.timeSinceLastFrame, 10);
+        bulletManager->mDbgDraw->update();
+
+        return true;
     }
 
 };
@@ -794,8 +1019,8 @@ std::shared_ptr<TtfMeshData> createTtfMesh(Ogre::SceneManager *scnMgr,
 int main() {
     std::cout << "Hello, World!" << std::endl;
 
-    boost::simple_segregated_storage memory_pool{};
-
+//    boost::simple_segregated_storage memory_pool{};
+//
 //    btAlignedAllocSetCustomAligned(
 //            [&memory_pool](size_t size, int alignment) {
 ////                return memory_pool.malloc_n(size, size);
@@ -805,6 +1030,8 @@ int main() {
 //                return memory_pool.free(memblock);
 //            }
 //    );
+
+
 
     auto ttfMeshFactory = std::make_shared<TtfMeshFactory>();
     std::vector<std::string> fontDir{
@@ -1117,7 +1344,10 @@ int main() {
 
 
     ImGuiDrawHandler imGuiDrawHandler;
-    ctx.getRenderWindow()->addListener(&imGuiDrawHandler);
+    ctx.getRoot()->addFrameListener(&imGuiDrawHandler);
+
+    BulletHandler bulletHandler{scnMgr};
+    ctx.getRoot()->addFrameListener(&bulletHandler);
 
     // register for input events
     KeyHandler keyHandler;
@@ -1139,6 +1369,7 @@ int main() {
     }
 
     ctx.closeApp();
+
 
     return 0;
 }
