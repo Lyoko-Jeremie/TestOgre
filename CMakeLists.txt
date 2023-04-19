@@ -107,10 +107,12 @@ list(TRANSFORM BULLET_LIBRARIES APPEND ".lib")
 
 list(TRANSFORM BULLET_LIBRARIES PREPEND "${BULLET_LIBRARY_DIRS}/")
 
+# =============================== add Custom Bullet Component ====================================
+
 set(OgreBullet
         ./Bullet/OgreBullet.h
         ./Bullet/OgreBullet.cpp
-        )
+        ./Bullet/BulletMemoryContainer.h)
 include_directories(./Bullet)
 
 include_directories(${BULLET_INCLUDE_DIRS})

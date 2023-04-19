@@ -5,6 +5,8 @@
 
 #include "OgreBullet.h"
 
+#include <memory>
+
 namespace Ogre
 {
 namespace Bullet
@@ -185,10 +187,10 @@ public:
 DynamicsWorld::DynamicsWorld(const Vector3& gravity)
 {
     // Bullet initialisation.
-    mCollisionConfig.reset(new btDefaultCollisionConfiguration());
-    mDispatcher.reset(new btCollisionDispatcher(mCollisionConfig.get()));
-    mSolver.reset(new btSequentialImpulseConstraintSolver());
-    mBroadphase.reset(new btDbvtBroadphase());
+    mCollisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
+    mDispatcher = std::make_unique<btCollisionDispatcher>(mCollisionConfig.get());
+    mSolver = std::make_unique<btSequentialImpulseConstraintSolver>();
+    mBroadphase = std::make_unique<btDbvtBroadphase>();
 
     mBtWorld = new btDiscreteDynamicsWorld(mDispatcher.get(), mBroadphase.get(), mSolver.get(), mCollisionConfig.get());
     mBtWorld->setGravity(convert(gravity));
