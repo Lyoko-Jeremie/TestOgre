@@ -29,7 +29,9 @@
 
 namespace BulletMemoryContainer {
 
-    class UserBase {
+    class UserPtrBase {
+    public:
+        virtual ~UserPtrBase() = default;
     };
 
     struct CollisionShape {
@@ -48,7 +50,7 @@ namespace BulletMemoryContainer {
         using Ptr = boost::shared_ptr<btCollisionShape>;
         Ptr ptr;
 
-        boost::shared_ptr<UserBase> userPtr;
+        boost::shared_ptr<UserPtrBase> userPtr;
 
         explicit CollisionShape(
                 Ptr ptr_
@@ -63,7 +65,7 @@ namespace BulletMemoryContainer {
 
     template<typename Allocator=std::allocator<CollisionShape>>
     using CollisionShapeContainer = boost::multi_index_container<
-            CollisionShape,
+            boost::shared_ptr<CollisionShape>,
             boost::multi_index::indexed_by<
                     boost::multi_index::sequenced<>,
                     boost::multi_index::ordered_unique<
@@ -104,7 +106,7 @@ namespace BulletMemoryContainer {
         using PtrMotionState = boost::shared_ptr<btMotionState>;
         PtrMotionState ptrMotionState;
 
-        boost::shared_ptr<UserBase> userPtr;
+        boost::shared_ptr<UserPtrBase> userPtr;
 
         RigidObject(
                 PtrRigidBody ptrRigidBody_,
@@ -121,7 +123,7 @@ namespace BulletMemoryContainer {
 
     template<typename Allocator=std::allocator<RigidObject>>
     using RigidObjectContainer = boost::multi_index_container<
-            RigidObject,
+            boost::shared_ptr<RigidObject>,
             boost::multi_index::indexed_by<
                     boost::multi_index::sequenced<>,
                     boost::multi_index::ordered_unique<
@@ -162,7 +164,7 @@ namespace BulletMemoryContainer {
         State state;
         std::chrono::steady_clock::time_point lastCheckTime;
 
-        boost::shared_ptr<UserBase> userPtr;
+        boost::shared_ptr<UserPtrBase> userPtr;
 
         CollisionState(
                 int idA_,
@@ -185,7 +187,7 @@ namespace BulletMemoryContainer {
 
     template<typename Allocator=std::allocator<CollisionState>>
     using CollisionStateContainer = boost::multi_index_container<
-            CollisionState,
+            boost::shared_ptr<CollisionState>,
             boost::multi_index::indexed_by<
                     boost::multi_index::sequenced<>,
                     boost::multi_index::ordered_unique<
@@ -246,44 +248,53 @@ namespace BulletMemoryContainer {
         }
 
         template<class... Args>
-        auto makeShape(Args &&... args) {
-            auto shape = csc.emplace_back(
-                    boost::allocate_shared<btBoxShape>(
-                            MemoryPool::MemoryCustomAllocator<btBoxShape>(pMemoryPoolManager_),
-                            std::forward<Args>(args)...
-                    )
-            ).first;
-            return shape;
-        }
-
-        template<class... Args>
-        auto makeBody(Args &&... args) {
-            auto shape = roc.emplace_back(
-                    boost::allocate_shared<btRigidBody>(
-                            MemoryPool::MemoryCustomAllocator<btRigidBody>(pMemoryPoolManager_),
-                            std::forward<Args>(args)...
-                    )
-            ).first;
-            return shape;
-        }
-
-        template<class... Args>
         auto makeCollisionState(Args &&... args) {
-            auto shape = ccs.emplace_back(
+            auto collisionState = ccs.emplace_back(
                     boost::allocate_shared<CollisionState>(
                             MemoryPool::MemoryCustomAllocator<CollisionState>(pMemoryPoolManager_),
                             std::forward<Args>(args)...
                     )
             ).first;
-            return shape;
+            return *collisionState;
+        }
+
+        template<class... Args>
+        auto makeRigidBodyPtr(Args &&... args) {
+            return makePtr<btRigidBody, Args...>(
+                    std::forward<Args>(args)...
+            );
+        }
+
+        template<class... Args>
+        auto makeMotionStatePtr(Args &&... args) {
+            return makePtr<btMotionState, Args...>(
+                    std::forward<Args>(args)...
+            );
         }
 
         template<typename Type, class... Args>
-        auto make(Args &&... args) {
+        auto makePtr(Args &&... args) {
             return boost::allocate_shared<Type>(
                     MemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
                     std::forward<Args>(args)...
             );
+        }
+
+        auto makeBody(
+                RigidObjectType::PtrRigidBody ptrRigidBody_,
+                RigidObjectType::PtrMotionState ptrMotionState_ = nullptr
+        ) {
+            auto body = roc.emplace_back(
+                    makePtr<RigidObjectType>(ptrRigidBody_, ptrMotionState_)
+            ).first;
+            return *body;
+        }
+
+        auto makeShape(CollisionShapeType::Ptr shapePtr) {
+            auto shape = csc.emplace_back(
+                    makePtr<CollisionShapeType>(shapePtr)
+            ).first;
+            return *shape;
         }
 
 
