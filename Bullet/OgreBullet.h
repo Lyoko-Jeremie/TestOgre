@@ -43,7 +43,7 @@ namespace Ogre {
         /** A MotionState is Bullet's way of informing you about updates to an object.
          * Pass this MotionState to a btRigidBody to have your SceneNode updated automaticaly.
          */
-        class RigidBodyState : public btMotionState, boost::enable_shared_from_this<RigidBodyState> {
+        class RigidBodyState : public btMotionState, public boost::enable_shared_from_this<RigidBodyState> {
             Node *mNode;
 
         public:
@@ -61,18 +61,6 @@ namespace Ogre {
             }
         };
 
-        /// create sphere collider using ogre provided data
-        btSphereShape *createSphereCollider(const MovableObject *mo);
-
-        /// create box collider using ogre provided data
-        btBoxShape *createBoxCollider(const MovableObject *mo);
-
-        /// create capsule collider using ogre provided data
-        btCapsuleShape *createCapsuleCollider(const MovableObject *mo);
-
-        /// create capsule collider using ogre provided data
-        btCylinderShape *createCylinderCollider(const MovableObject *mo);
-
         struct CollisionListener {
             virtual ~CollisionListener() {}
 
@@ -85,7 +73,7 @@ namespace Ogre {
             virtual void addSingleResult(const MovableObject *other, float distance) = 0;
         };
 
-        static void onTick(btDynamicsWorld *world, btScalar timeStep);
+//        static void onTick(btDynamicsWorld *world, btScalar timeStep);
 
         /// simplified wrapper with automatic memory management
         class DynamicsWorld {
@@ -128,12 +116,13 @@ namespace Ogre {
                               &*mCollisionConfig
                       )) {
                 mBtWorld->setGravity(convert(gravity));
-                mBtWorld->setInternalTickCallback(onTick);
+                // TODO
+//                mBtWorld->setInternalTickCallback(onTick);
             }
 
             ~DynamicsWorld() = default;
 
-            BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType::PtrRigidBody
+            BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType &
             addRigidBody(float mass, Entity *ent, ColliderType ct,
                          CollisionListener *listener = nullptr,
                          int group = 1, int mask = -1);
@@ -141,6 +130,20 @@ namespace Ogre {
             const decltype(mBtWorld) &getBtWorld() const { return mBtWorld; }
 
             void rayTest(const Ray &ray, RayResultCallback *callback, float maxDist = 1000);
+
+
+            /// create sphere collider using ogre provided data
+            boost::shared_ptr<btSphereShape> createSphereCollider(const MovableObject *mo);
+
+            /// create box collider using ogre provided data
+            boost::shared_ptr<btBoxShape> createBoxCollider(const MovableObject *mo);
+
+            /// create capsule collider using ogre provided data
+            boost::shared_ptr<btCapsuleShape> createCapsuleCollider(const MovableObject *mo);
+
+            /// create capsule collider using ogre provided data
+            boost::shared_ptr<btCylinderShape> createCylinderCollider(const MovableObject *mo);
+
         };
 
         class DebugDrawer : public btIDebugDraw {

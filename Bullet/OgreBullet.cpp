@@ -13,42 +13,45 @@ namespace Ogre {
         typedef std::vector<Vector3> Vector3Array;
         typedef std::pair<unsigned short, Vector3Array *> BoneKeyIndex;
 
-        btSphereShape *createSphereCollider(const MovableObject *mo) {
+        boost::shared_ptr<btSphereShape> DynamicsWorld::createSphereCollider(const MovableObject *mo) {
             OgreAssert(mo->getParentSceneNode(), "MovableObject must be attached");
 
-            auto shape = new btSphereShape(mo->getBoundingRadius());
+            auto shape = memoryContainerManager_->makePtr<btSphereShape>(mo->getBoundingRadius());
             shape->setLocalScaling(convert(mo->getParentSceneNode()->getScale()));
 
             return shape;
         }
 
-        btBoxShape *createBoxCollider(const MovableObject *mo) {
+        boost::shared_ptr<btBoxShape> DynamicsWorld::createBoxCollider(const MovableObject *mo) {
             OgreAssert(mo->getParentSceneNode(), "MovableObject must be attached");
 
-            auto shape = new btBoxShape(convert(mo->getBoundingBox().getHalfSize()));
+            auto shape = memoryContainerManager_->makePtr<btBoxShape>(convert(mo->getBoundingBox().getHalfSize()));
             shape->setLocalScaling(convert(mo->getParentSceneNode()->getScale()));
 
             return shape;
         }
 
-        btCapsuleShape *createCapsuleCollider(const MovableObject *mo) {
+        boost::shared_ptr<btCapsuleShape> DynamicsWorld::createCapsuleCollider(const MovableObject *mo) {
             OgreAssert(mo->getParentSceneNode(), "MovableObject must be attached");
 
             auto sz = mo->getBoundingBox().getHalfSize();
 
             btScalar height = std::max(sz.x, std::max(sz.y, sz.z));
             btScalar radius;
-            btCapsuleShape *shape;
+            boost::shared_ptr<btCapsuleShape> shape;
             // Orient the capsule such that its height is aligned with the largest dimension.
             if (height == sz.y) {
                 radius = std::max(sz.x, sz.z);
-                shape = new btCapsuleShape(radius, 2 * height - 2 * radius);
+                shape = memoryContainerManager_->makePtr<btCapsuleShape>(radius, 2 * height - 2 * radius);
+//                shape = new btCapsuleShape(radius, 2 * height - 2 * radius);
             } else if (height == sz.x) {
                 radius = std::max(sz.y, sz.z);
-                shape = new btCapsuleShapeX(radius, 2 * height - 2 * radius);
+                shape = memoryContainerManager_->makePtr<btCapsuleShapeX>(radius, 2 * height - 2 * radius);
+//                shape = new btCapsuleShapeX(radius, 2 * height - 2 * radius);
             } else {
                 radius = std::max(sz.x, sz.y);
-                shape = new btCapsuleShapeZ(radius, 2 * height - 2 * radius);
+                shape = memoryContainerManager_->makePtr<btCapsuleShapeZ>(radius, 2 * height - 2 * radius);
+//                shape = new btCapsuleShapeZ(radius, 2 * height - 2 * radius);
             }
 
             shape->setLocalScaling(convert(mo->getParentSceneNode()->getScale()));
@@ -56,21 +59,24 @@ namespace Ogre {
             return shape;
         }
 
-/// create capsule collider using ogre provided data
-        btCylinderShape *createCylinderCollider(const MovableObject *mo) {
+        /// create capsule collider using ogre provided data
+        boost::shared_ptr<btCylinderShape> DynamicsWorld::createCylinderCollider(const MovableObject *mo) {
             OgreAssert(mo->getParentSceneNode(), "MovableObject must be attached");
 
             auto sz = convert(mo->getBoundingBox().getHalfSize());
 
             btScalar height = std::max(sz.x(), std::max(sz.y(), sz.z()));
-            btCylinderShape *shape;
+            boost::shared_ptr<btCylinderShape> shape;
             // Orient the capsule such that its height is aligned with the largest dimension.
             if (height == sz.y()) {
-                shape = new btCylinderShape(sz);
+                shape = memoryContainerManager_->makePtr<btCylinderShape>(sz);
+//                shape = new btCylinderShape(sz);
             } else if (height == sz.x()) {
-                shape = new btCylinderShapeX(sz);
+                shape = memoryContainerManager_->makePtr<btCylinderShapeX>(sz);
+//                shape = new btCylinderShapeX(sz);
             } else {
-                shape = new btCylinderShapeZ(sz);
+                shape = memoryContainerManager_->makePtr<btCylinderShapeZ>(sz);
+//                shape = new btCylinderShapeZ(sz);
             }
 
             shape->setLocalScaling(convert(mo->getParentSceneNode()->getScale()));
@@ -83,23 +89,25 @@ namespace Ogre {
             CollisionListener *listener;
         };
 
-        static void onTick(btDynamicsWorld *world, btScalar timeStep) {
-            int numManifolds = world->getDispatcher()->getNumManifolds();
-            auto manifolds = world->getDispatcher()->getInternalManifoldPointer();
-            for (int i = 0; i < numManifolds; i++) {
-                btPersistentManifold *manifold = manifolds[i];
-
-                for (int j = 0; j < manifold->getNumContacts(); j++) {
-                    const btManifoldPoint &mp = manifold->getContactPoint(i);
-                    auto body0 = static_cast<EntityCollisionListener *>(manifold->getBody0()->getUserPointer());
-                    auto body1 = static_cast<EntityCollisionListener *>(manifold->getBody1()->getUserPointer());
-                    if (body0->listener)
-                        body0->listener->contact(body1->entity, mp);
-                    if (body1->listener)
-                        body1->listener->contact(body0->entity, mp);
-                }
-            }
-        }
+//        // TODO
+//        static void onTick(btDynamicsWorld *world, btScalar timeStep) {
+//            int numManifolds = world->getDispatcher()->getNumManifolds();
+//            auto manifolds = world->getDispatcher()->getInternalManifoldPointer();
+//            for (int i = 0; i < numManifolds; i++) {
+//                btPersistentManifold *manifold = manifolds[i];
+//
+//                for (int j = 0; j < manifold->getNumContacts(); j++) {
+//                    const btManifoldPoint &mp = manifold->getContactPoint(i);
+//                    // TODO
+//                    auto body0 = static_cast<EntityCollisionListener *>(manifold->getBody0()->getUserPointer());
+//                    auto body1 = static_cast<EntityCollisionListener *>(manifold->getBody1()->getUserPointer());
+//                    if (body0->listener)
+//                        body0->listener->contact(body1->entity, mp);
+//                    if (body1->listener)
+//                        body1->listener->contact(body0->entity, mp);
+//                }
+//            }
+//        }
 
         class VertexIndexToShape {
         public:
@@ -151,15 +159,15 @@ namespace Ogre {
             Vector3 mScale;
         };
 
-/// wrapper with automatic memory management
-        class RigidBody {
+        /// wrapper with automatic memory management
+        class RigidBodyGuard {
             btRigidBody *mBtBody;
             btDynamicsWorld *mBtWorld;
 
         public:
-            RigidBody(btRigidBody *btBody, btDynamicsWorld *btWorld) : mBtBody(btBody), mBtWorld(btWorld) {}
+            RigidBodyGuard(btRigidBody *btBody, btDynamicsWorld *btWorld) : mBtBody(btBody), mBtWorld(btWorld) {}
 
-            ~RigidBody() {
+            ~RigidBodyGuard() {
                 mBtWorld->removeRigidBody(mBtBody);
                 delete (EntityCollisionListener *) mBtBody->getUserPointer();
                 delete mBtBody->getMotionState();
@@ -169,14 +177,35 @@ namespace Ogre {
 
             btRigidBody *getBtBody() const { return mBtBody; }
         };
+//        class RigidBody {
+//            btRigidBody *mBtBody;
+//            btDynamicsWorld *mBtWorld;
+//
+//        public:
+//            RigidBody(btRigidBody *btBody, btDynamicsWorld *btWorld) : mBtBody(btBody), mBtWorld(btWorld) {}
+//
+//            ~RigidBody() {
+//                mBtWorld->removeRigidBody(mBtBody);
+//                delete (EntityCollisionListener *) mBtBody->getUserPointer();
+//                delete mBtBody->getMotionState();
+//                delete mBtBody->getCollisionShape();
+//                delete mBtBody;
+//            }
+//
+//            btRigidBody *getBtBody() const { return mBtBody; }
+//        };
 
 
-        BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType::PtrRigidBody
+        BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType &
         DynamicsWorld::addRigidBody(float mass, Entity *ent, ColliderType ct, CollisionListener *listener,
                                     int group, int mask) {
             auto node = ent->getParentSceneNode();
             OgreAssert(node, "entity must be attached");
-            RigidBodyState *state = new RigidBodyState(node);
+//            RigidBodyState *state = new RigidBodyState(node);
+            auto state = boost::allocate_shared<RigidBodyState>(
+                    MemoryPool::MemoryCustomAllocator<RigidBodyState>(memoryContainerManager_->getMemoryPoolManager()),
+                    node
+            );
 
             if (ent->hasSkeleton()) {
                 ent->addSoftwareAnimationRequest(false);
@@ -184,7 +213,7 @@ namespace Ogre {
                 ent->setUpdateBoundingBoxFromSkeleton(true);
             }
 
-            btCollisionShape *cs = NULL;
+            boost::shared_ptr<btCollisionShape> cs = nullptr;
             switch (ct) {
                 case CT_BOX:
                     cs = createBoxCollider(ent);
@@ -198,12 +227,12 @@ namespace Ogre {
                 case CT_CAPSULE:
                     cs = createCapsuleCollider(ent);
                     break;
-                case CT_TRIMESH:
-                    cs = VertexIndexToShape(ent).createTrimesh();
-                    break;
-                case CT_HULL:
-                    cs = VertexIndexToShape(ent).createConvex();
-                    break;
+//                case CT_TRIMESH:
+//                    cs = VertexIndexToShape(ent).createTrimesh();
+//                    break;
+//                case CT_HULL:
+//                    cs = VertexIndexToShape(ent).createConvex();
+//                    break;
             }
 
             if (ent->hasSkeleton())
@@ -213,17 +242,26 @@ namespace Ogre {
             if (mass != 0) // mass = 0 -> static
                 cs->calculateLocalInertia(mass, inertia);
 
-            auto rb = new btRigidBody(mass, state, cs, inertia);
-            mBtWorld->addRigidBody(rb, group, mask);
-            rb->setUserPointer(new EntityCollisionListener{ent, listener});
+//            auto rb = new btRigidBody(mass, state, cs, inertia);
+            auto rb = memoryContainerManager_->makeBody(
+                    memoryContainerManager_->makeRigidBodyPtr(
+                            mass,
+                            dynamic_cast<btMotionState *>(state.get()),
+                            dynamic_cast<btCollisionShape *>(cs.get()),
+                            inertia
+                    )
+            );
+            mBtWorld->addRigidBody(rb->ptrRigidBody.get(), group, mask);
+            rb->ptrRigidBody->setUserPointer(new EntityCollisionListener{ent, listener});
 
-            // transfer ownership to node
-            auto bodyWrapper = std::make_shared<RigidBody>(rb, mBtWorld);
-            node->getUserObjectBindings().setUserAny("BtRigidBody", bodyWrapper);
+//            // transfer ownership to node
+//            auto bodyWrapper = memoryContainerManager_->makePtr<RigidBody>(rb, mBtWorld);
+//            node->getUserObjectBindings().setUserAny("BtRigidBody", bodyWrapper);
 
-            return rb;
+            return *rb;
         }
 
+        // TODO
         struct RayResultCallbackWrapper : public btCollisionWorld::RayResultCallback {
             Bullet::RayResultCallback *mCallback;
             float mMaxDistance;
@@ -454,8 +492,11 @@ namespace Ogre {
             assert(mVertexCount && (mIndexCount >= 6) &&
                    ("Mesh must have some vertices and at least 6 indices (2 triangles)"));
 
-            btConvexHullShape *shape = new btConvexHullShape((btScalar *) &mVertexBuffer[0].x, mVertexCount,
-                                                             sizeof(Vector3));
+            btConvexHullShape *shape = new btConvexHullShape(
+                    (btScalar *) &mVertexBuffer[0].x,
+                    mVertexCount,
+                    sizeof(Vector3)
+            );
 
             shape->setLocalScaling(convert(mScale));
 
@@ -527,14 +568,14 @@ namespace Ogre {
         }
 
 //------------------------------------------------------------------------------------------------
-        VertexIndexToShape::VertexIndexToShape(const Entity *entity, const Affine3 &transform) : VertexIndexToShape(
-                transform) {
+        VertexIndexToShape::VertexIndexToShape(const Entity *entity, const Affine3 &transform)
+                : VertexIndexToShape(transform) {
             addEntity(entity, transform);
         }
 
 //------------------------------------------------------------------------------------------------
-        VertexIndexToShape::VertexIndexToShape(Renderable *rend, const Affine3 &transform) : VertexIndexToShape(
-                transform) {
+        VertexIndexToShape::VertexIndexToShape(Renderable *rend, const Affine3 &transform)
+                : VertexIndexToShape(transform) {
             RenderOperation op;
             rend->getRenderOperation(op);
             addStaticVertexData(op.vertexData);
