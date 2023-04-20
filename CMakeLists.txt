@@ -5,9 +5,6 @@ project(${ProjectMainName})
 set(CMAKE_CXX_STANDARD 20)
 
 
-
-
-
 # =============================== find Boost start ====================================
 
 set(BOOST_ROOT h:/CodeLib/boost_1_81_0_msvc)
@@ -54,9 +51,6 @@ message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
 message(STATUS "Boost_VERSION: ${Boost_VERSION}")
 
 message(STATUS "CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
-
-
-
 
 
 # =============================== find Boost end ====================================
@@ -112,7 +106,10 @@ list(TRANSFORM BULLET_LIBRARIES PREPEND "${BULLET_LIBRARY_DIRS}/")
 set(OgreBullet
         ./Bullet/OgreBullet.h
         ./Bullet/OgreBullet.cpp
-        ./Bullet/BulletMemoryContainer.h)
+        ./Bullet/BulletMemoryContainer.h
+        ./Bullet/BulletMemoryContainer.cpp
+        Bullet/MemoryPool.cpp
+        Bullet/MemoryPool.h)
 include_directories(./Bullet)
 
 include_directories(${BULLET_INCLUDE_DIRS})
@@ -129,8 +126,6 @@ include_directories(h:/CodeLib/gml/include)
 link_directories(h:/CodeLib/generator-build-msvc-debug-install/lib/)
 
 # =============================== find generator end ====================================
-
-
 
 
 add_executable(${ProjectMainName}
@@ -157,7 +152,7 @@ target_link_libraries(${ProjectMainName} ${Boost_LIBRARIES})
 
 if (WIN32)
     # https://github.com/boostorg/log/issues/28
-#    add_compile_definitions(BOOST_USE_WINAPI_VERSION=0x0501)
+    #    add_compile_definitions(BOOST_USE_WINAPI_VERSION=0x0501)
     add_compile_definitions(BOOST_USE_WINAPI_VERSION=0x0600)
     target_link_libraries(${ProjectMainName} wsock32 ws2_32 crypt32)
 else (WIN32)
