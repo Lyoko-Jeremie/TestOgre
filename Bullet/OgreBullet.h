@@ -91,25 +91,13 @@ namespace Ogre {
                     boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager,
                     const Vector3 &gravity)
                     : memoryContainerManager_(std::move(memoryContainerManager)),
-                      mCollisionConfig(boost::allocate_unique<btDefaultCollisionConfiguration>(
-                              MemoryPool::MemoryCustomAllocator<btDefaultCollisionConfiguration>(
-                                      memoryContainerManager_->getMemoryPoolManager()))),
-                      mDispatcher(boost::allocate_unique<btCollisionDispatcher>(
-                              MemoryPool::MemoryCustomAllocator<btCollisionDispatcher>(
-                                      memoryContainerManager_->getMemoryPoolManager()),
+                      mCollisionConfig(memoryContainerManager_->makeUniquePtr<btDefaultCollisionConfiguration>()),
+                      mDispatcher(memoryContainerManager_->makeUniquePtr<btCollisionDispatcher>(
                               &*mCollisionConfig
                       )),
-                      mBroadphase(boost::allocate_unique<btDbvtBroadphase>(
-                              MemoryPool::MemoryCustomAllocator<btDbvtBroadphase>(
-                                      memoryContainerManager_->getMemoryPoolManager())
-                      )),
-                      mSolver(boost::allocate_unique<btSequentialImpulseConstraintSolver>(
-                              MemoryPool::MemoryCustomAllocator<btSequentialImpulseConstraintSolver>(
-                                      memoryContainerManager_->getMemoryPoolManager())
-                      )),
-                      mBtWorld(boost::allocate_unique<btDiscreteDynamicsWorld>(
-                              MemoryPool::MemoryCustomAllocator<btDiscreteDynamicsWorld>(
-                                      memoryContainerManager_->getMemoryPoolManager()),
+                      mBroadphase(memoryContainerManager_->makeUniquePtr<btDbvtBroadphase>()),
+                      mSolver(memoryContainerManager_->makeUniquePtr<btSequentialImpulseConstraintSolver>()),
+                      mBtWorld(memoryContainerManager_->makeUniquePtr<btDiscreteDynamicsWorld>(
                               &*mDispatcher,
                               &*mBroadphase,
                               &*mSolver,
@@ -122,7 +110,7 @@ namespace Ogre {
 
             ~DynamicsWorld() = default;
 
-            BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType &
+            boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
             addRigidBody(float mass, Entity *ent, ColliderType ct,
                          CollisionListener *listener = nullptr,
                          int group = 1, int mask = -1);

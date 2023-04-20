@@ -273,6 +273,14 @@ namespace BulletMemoryContainer {
         }
 
         template<typename Type, class... Args>
+        MemoryPool::unique_ptr_with_alloc_deleter<Type> makeUniquePtr(Args &&... args) {
+            return boost::allocate_unique<Type>(
+                    MemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
+                    std::forward<Args>(args)...
+            );
+        }
+
+        template<typename Type, class... Args>
         auto makePtr(Args &&... args) {
             return boost::allocate_shared<Type>(
                     MemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),

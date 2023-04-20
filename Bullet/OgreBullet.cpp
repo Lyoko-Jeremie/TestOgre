@@ -123,9 +123,13 @@ namespace Ogre {
 
             Vector3 getSize();
 
-            btBvhTriangleMeshShape *createTrimesh();
+            boost::shared_ptr<btBvhTriangleMeshShape> createTrimesh(
+                    boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager
+            );
 
-            btConvexHullShape *createConvex();
+            boost::shared_ptr<btConvexHullShape> createConvex(
+                    boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager
+            );
 
             void addEntity(const Entity *entity, const Affine3 &transform = Affine3::IDENTITY);
 
@@ -196,14 +200,16 @@ namespace Ogre {
 //        };
 
 
-        BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType &
-        DynamicsWorld::addRigidBody(float mass, Entity *ent, ColliderType ct, CollisionListener *listener,
+        boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
+        DynamicsWorld::addRigidBody(float mass, Entity *ent,
+                                    ColliderType ct,
+                                    CollisionListener *listener,
                                     int group, int mask) {
             auto node = ent->getParentSceneNode();
             OgreAssert(node, "entity must be attached");
 //            RigidBodyState *state = new RigidBodyState(node);
-            auto state = boost::allocate_shared<RigidBodyState>(
-                    MemoryPool::MemoryCustomAllocator<RigidBodyState>(memoryContainerManager_->getMemoryPoolManager()),
+            // TODO
+            auto state = memoryContainerManager_->makePtr<RigidBodyState>(
                     node
             );
 
@@ -227,12 +233,12 @@ namespace Ogre {
                 case CT_CAPSULE:
                     cs = createCapsuleCollider(ent);
                     break;
-//                case CT_TRIMESH:
-//                    cs = VertexIndexToShape(ent).createTrimesh();
-//                    break;
-//                case CT_HULL:
-//                    cs = VertexIndexToShape(ent).createConvex();
-//                    break;
+                case CT_TRIMESH:
+                    cs = VertexIndexToShape(ent).createTrimesh(memoryContainerManager_);
+                    break;
+                case CT_HULL:
+                    cs = VertexIndexToShape(ent).createConvex(memoryContainerManager_);
+                    break;
             }
 
             if (ent->hasSkeleton())
@@ -242,6 +248,8 @@ namespace Ogre {
             if (mass != 0) // mass = 0 -> static
                 cs->calculateLocalInertia(mass, inertia);
 
+            memoryContainerManager_->makeShape(cs);
+
 //            auto rb = new btRigidBody(mass, state, cs, inertia);
             auto rb = memoryContainerManager_->makeBody(
                     memoryContainerManager_->makeRigidBodyPtr(
@@ -249,7 +257,8 @@ namespace Ogre {
                             dynamic_cast<btMotionState *>(state.get()),
                             dynamic_cast<btCollisionShape *>(cs.get()),
                             inertia
-                    )
+                    ),
+                    state
             );
             mBtWorld->addRigidBody(rb->ptrRigidBody.get(), group, mask);
             rb->ptrRigidBody->setUserPointer(new EntityCollisionListener{ent, listener});
@@ -258,7 +267,7 @@ namespace Ogre {
 //            auto bodyWrapper = memoryContainerManager_->makePtr<RigidBody>(rb, mBtWorld);
 //            node->getUserObjectBindings().setUserAny("BtRigidBody", bodyWrapper);
 
-            return *rb;
+            return rb;
         }
 
         // TODO
@@ -488,14 +497,21 @@ namespace Ogre {
         }
 
 //------------------------------------------------------------------------------------------------
-        btConvexHullShape *VertexIndexToShape::createConvex() {
+        boost::shared_ptr<btConvexHullShape> VertexIndexToShape::createConvex(
+                boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager
+        ) {
             assert(mVertexCount && (mIndexCount >= 6) &&
                    ("Mesh must have some vertices and at least 6 indices (2 triangles)"));
 
-            btConvexHullShape *shape = new btConvexHullShape(
+//            btConvexHullShape *shape = new btConvexHullShape(
+//                    (btScalar *) &mVertexBuffer[0].x,
+//                    mVertexCount,
+//                    sizeof(Vector3)
+//            );
+            auto shape = memoryContainerManager->makePtr<btConvexHullShape>(
                     (btScalar *) &mVertexBuffer[0].x,
                     mVertexCount,
-                    sizeof(Vector3)
+                    (int) sizeof(Vector3)
             );
 
             shape->setLocalScaling(convert(mScale));
@@ -504,7 +520,9 @@ namespace Ogre {
         }
 
 //------------------------------------------------------------------------------------------------
-        btBvhTriangleMeshShape *VertexIndexToShape::createTrimesh() {
+        boost::shared_ptr<btBvhTriangleMeshShape> VertexIndexToShape::createTrimesh(
+                boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager
+        ) {
             assert(mVertexCount && (mIndexCount >= 6) &&
                    ("Mesh must have some vertices and at least 6 indices (2 triangles)"));
 
@@ -541,7 +559,8 @@ namespace Ogre {
             }
 
             const bool useQuantizedAABB = true;
-            btBvhTriangleMeshShape *shape = new btBvhTriangleMeshShape(trimesh, useQuantizedAABB);
+//            btBvhTriangleMeshShape *shape = new btBvhTriangleMeshShape(trimesh, useQuantizedAABB);
+            auto shape = memoryContainerManager->makePtr<btBvhTriangleMeshShape>(trimesh, useQuantizedAABB);
 
             shape->setLocalScaling(convert(mScale));
 
