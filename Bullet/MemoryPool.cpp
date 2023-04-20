@@ -4,6 +4,8 @@
 
 namespace MemoryPool {
 
+    boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> gpMemoryPoolManager;
+
     void setup() {
 
         MemoryPool::gpMemoryPoolManager = boost::make_shared<MemoryPool::MemoryCustomAllocatorManager>();

@@ -40,7 +40,7 @@ namespace MemoryPool {
         }
     };
 
-    boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> gpMemoryPoolManager;
+    extern boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> gpMemoryPoolManager;
 
     extern void *btAlignedAllocFunc(size_t size, int alignment);
 
