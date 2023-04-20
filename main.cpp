@@ -169,57 +169,57 @@ public:
 
 };
 
-class BulletManager : public boost::enable_shared_from_this<BulletManager> {
-public:
+//class BulletManager : public boost::enable_shared_from_this<BulletManager> {
+//public:
+//
+//    // TODO use memory pool
+//    std::unique_ptr<Ogre::Bullet::DynamicsWorld> mDynWorld;
+//    std::unique_ptr<Ogre::Bullet::DebugDrawer> mDbgDraw;
+//    std::unique_ptr<btStaticPlaneShape> btStaticPlaneShape_;
+//    std::unique_ptr<btMotionState> btStaticPlaneMotionState_;
+//    std::unique_ptr<btRigidBody> btStaticPlaneRigidBody_;
+//
+//    std::unique_ptr<CollisionStateContainer> collisionStateContainer{std::make_unique<CollisionStateContainer>()};
+//    std::unique_ptr<CollisionShapeContainer> collisionShapeContainer{std::make_unique<CollisionShapeContainer>()};
+//    std::unique_ptr<RigidObjectContainer> rigidObjectContainer{std::make_unique<RigidObjectContainer>()};
+//
+//    BulletManager(Ogre::SceneManager *scnMgr)
+//            : mDynWorld(std::make_unique<Ogre::Bullet::DynamicsWorld>(Ogre::Vector3(0, -9.8, 0))),
+//              mDbgDraw(std::make_unique<Ogre::Bullet::DebugDrawer>(
+//                      scnMgr->getRootSceneNode(),
+//                      mDynWorld->getBtWorld())),
+//              btStaticPlaneShape_(std::make_unique<btStaticPlaneShape>(btVector3(0, 1, 0), 0)),
+//              btStaticPlaneMotionState_(std::make_unique<btDefaultMotionState>()),
+//              btStaticPlaneRigidBody_(std::make_unique<btRigidBody>(
+//                      btRigidBody::btRigidBodyConstructionInfo{
+//                              0, btStaticPlaneMotionState_.get(), btStaticPlaneShape_.get()
+//                      }
+//              )) {
+//
+//        //        mDynWorld->addRigidBody(5, player, Ogre::Bullet::CT_SPHERE);
+//        //        mDynWorld->addRigidBody(0, level, Ogre::Bullet::CT_TRIMESH);
+//
+//        mDynWorld->getBtWorld()->addRigidBody(btStaticPlaneRigidBody_.get());
+//    }
+//
+//};
 
-    // TODO use memory pool
-    std::unique_ptr<Ogre::Bullet::DynamicsWorld> mDynWorld;
-    std::unique_ptr<Ogre::Bullet::DebugDrawer> mDbgDraw;
-    std::unique_ptr<btStaticPlaneShape> btStaticPlaneShape_;
-    std::unique_ptr<btMotionState> btStaticPlaneMotionState_;
-    std::unique_ptr<btRigidBody> btStaticPlaneRigidBody_;
-
-    std::unique_ptr<CollisionStateContainer> collisionStateContainer{std::make_unique<CollisionStateContainer>()};
-    std::unique_ptr<CollisionShapeContainer> collisionShapeContainer{std::make_unique<CollisionShapeContainer>()};
-    std::unique_ptr<RigidObjectContainer> rigidObjectContainer{std::make_unique<RigidObjectContainer>()};
-
-    BulletManager(Ogre::SceneManager *scnMgr)
-            : mDynWorld(std::make_unique<Ogre::Bullet::DynamicsWorld>(Ogre::Vector3(0, -9.8, 0))),
-              mDbgDraw(std::make_unique<Ogre::Bullet::DebugDrawer>(
-                      scnMgr->getRootSceneNode(),
-                      mDynWorld->getBtWorld())),
-              btStaticPlaneShape_(std::make_unique<btStaticPlaneShape>(btVector3(0, 1, 0), 0)),
-              btStaticPlaneMotionState_(std::make_unique<btDefaultMotionState>()),
-              btStaticPlaneRigidBody_(std::make_unique<btRigidBody>(
-                      btRigidBody::btRigidBodyConstructionInfo{
-                              0, btStaticPlaneMotionState_.get(), btStaticPlaneShape_.get()
-                      }
-              )) {
-
-        //        mDynWorld->addRigidBody(5, player, Ogre::Bullet::CT_SPHERE);
-        //        mDynWorld->addRigidBody(0, level, Ogre::Bullet::CT_TRIMESH);
-
-        mDynWorld->getBtWorld()->addRigidBody(btStaticPlaneRigidBody_.get());
-    }
-
-};
-
-class BulletHandler : public Ogre::FrameListener {
-public:
-
-    boost::shared_ptr<BulletManager> bulletManager;
-
-    explicit BulletHandler(Ogre::SceneManager *scnMgr) : bulletManager(boost::make_shared<BulletManager>(scnMgr)) {}
-
-    bool frameStarted(const Ogre::FrameEvent &evt) override {
-
-        bulletManager->mDynWorld->getBtWorld()->stepSimulation(evt.timeSinceLastFrame, 10);
-        bulletManager->mDbgDraw->update();
-
-        return true;
-    }
-
-};
+//class BulletHandler : public Ogre::FrameListener {
+//public:
+//
+//    boost::shared_ptr<BulletManager> bulletManager;
+//
+//    explicit BulletHandler(Ogre::SceneManager *scnMgr) : bulletManager(boost::make_shared<BulletManager>(scnMgr)) {}
+//
+//    bool frameStarted(const Ogre::FrameEvent &evt) override {
+//
+//        bulletManager->mDynWorld->getBtWorld()->stepSimulation(evt.timeSinceLastFrame, 10);
+//        bulletManager->mDbgDraw->update();
+//
+//        return true;
+//    }
+//
+//};
 
 
 // https://wiki.ogre3d.org/Generating+A+Mesh
@@ -1162,8 +1162,8 @@ int main() {
     ImGuiDrawHandler imGuiDrawHandler;
     ctx.getRoot()->addFrameListener(&imGuiDrawHandler);
 
-    BulletHandler bulletHandler{scnMgr};
-    ctx.getRoot()->addFrameListener(&bulletHandler);
+//    BulletHandler bulletHandler{scnMgr};
+//    ctx.getRoot()->addFrameListener(&bulletHandler);
 
     // register for input events
     KeyHandler keyHandler;
