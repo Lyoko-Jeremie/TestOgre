@@ -308,11 +308,12 @@ namespace BulletMemoryContainer {
 
         template<typename Type, class... Args>
         Type *newRawPtr(Args &&... args) {
+            // placement new
             return new(pMemoryPoolManager_->allocate(sizeof(Type))) Type(std::forward<Args>(args)...);
         }
 
         template<typename Type>
-        void deleteRawPtr(Type *ptr) { pMemoryPoolManager_->deallocate(ptr); }
+        void deleteRawPtr(Type *ptr) { pMemoryPoolManager_->deletePlacement<Type>(ptr); }
 
 //        void *newRawPtr(size_t, void *ptr) { return ptr; }
 //

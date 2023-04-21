@@ -38,6 +38,16 @@ namespace MemoryPool {
             BOOST_ASSERT_MSG(n != memoryPool.end(), "cannot find ptr, bad memory.");
             memoryPool.erase(n);
         }
+
+        // Is there a "placement delete"
+        // https://www.stroustrup.com/bs_faq2.html#placement-delete
+        template<typename Type>
+        void deletePlacement(Type *const memblock) {
+            auto n = memoryPool.find((unsigned char *) memblock);
+            BOOST_ASSERT_MSG(n != memoryPool.end(), "cannot find ptr, bad memory.");
+            memblock->~Type();
+            memoryPool.erase(n);
+        }
     };
 
     extern boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> gpMemoryPoolManager;
