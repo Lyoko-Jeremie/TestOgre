@@ -528,7 +528,8 @@ namespace Ogre {
 
             unsigned int numFaces = mIndexCount / 3;
 
-            btTriangleMesh *trimesh = new btTriangleMesh();
+//            btTriangleMesh *trimesh = new btTriangleMesh();
+            btTriangleMesh *trimesh = memoryContainerManager->newRawPtr<btTriangleMesh>();
             unsigned int *indices = mIndexBuffer;
             Vector3 *vertices = mVertexBuffer;
 

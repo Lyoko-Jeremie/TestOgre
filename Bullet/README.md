@@ -40,4 +40,10 @@ auto rb = memoryContainerManager_->makeBody(
 mBtWorld->addRigidBody(rb->ptrRigidBody.get(), group, mask);
 
 
+
+// btTriangleMesh *trimesh = new btTriangleMesh();
+btTriangleMesh *trimesh = memoryContainerManager->newRawPtr<btTriangleMesh>();
+memoryContainerManager->deleteRawPtr(trimesh);
+
+
 ```
