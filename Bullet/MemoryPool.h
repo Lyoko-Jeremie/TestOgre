@@ -3,6 +3,7 @@
 #ifndef TESTOGRE_MEMORYPOOL_H
 #define TESTOGRE_MEMORYPOOL_H
 
+#include <mutex>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/make_shared.hpp>
@@ -18,22 +19,26 @@ namespace MemoryPool {
         // we need the allocated memory pined at a place, so don't use std::vector replace smart ptr
         // when item erase, the memory block will deallocate by boost::shared_ptr
         std::unordered_map<unsigned char *, boost::shared_ptr<DataType>> memoryPool;
+        std::mutex mtx;
 
     public:
 
         void reset() {
+            std::lock_guard lg{mtx};
             memoryPool.clear();
         }
 
         void *allocate(const size_t size) {
             auto b = boost::make_shared<DataType>(size);
             if (b) {
+                std::lock_guard lg{mtx};
                 memoryPool.emplace(std::make_pair(b.get(), b));
             }
             return b.get();
         }
 
         void deallocate(void *const memblock) {
+            std::lock_guard lg{mtx};
             auto n = memoryPool.find((unsigned char *) memblock);
             BOOST_ASSERT_MSG(n != memoryPool.end(), "cannot find ptr, bad memory.");
             memoryPool.erase(n);
@@ -43,6 +48,7 @@ namespace MemoryPool {
         // https://www.stroustrup.com/bs_faq2.html#placement-delete
         template<typename Type>
         void deletePlacement(Type *const memblock) {
+            std::lock_guard lg{mtx};
             auto n = memoryPool.find((unsigned char *) memblock);
             BOOST_ASSERT_MSG(n != memoryPool.end(), "cannot find ptr, bad memory.");
             memblock->~Type();

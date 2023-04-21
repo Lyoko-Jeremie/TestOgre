@@ -1,6 +1,7 @@
 // jeremie
 
 #include "MemoryPool.h"
+#include "LinearMath/btAlignedAllocator.h"
 
 namespace MemoryPool {
 
@@ -8,17 +9,23 @@ namespace MemoryPool {
 
     void setup() {
 
-        MemoryPool::gpMemoryPoolManager = boost::make_shared<MemoryPool::MemoryCustomAllocatorManager>();
+        boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> nil;
+        boost::atomic_compare_exchange(
+                &MemoryPool::gpMemoryPoolManager,
+                &nil,
+                boost::make_shared<MemoryPool::MemoryCustomAllocatorManager>()
+        );
+//        MemoryPool::gpMemoryPoolManager = boost::make_shared<MemoryPool::MemoryCustomAllocatorManager>();
 
 
 //    btAlignedAllocSetCustomAligned(
 //            MemoryPool::btAlignedAllocFunc,
 //            MemoryPool::btAlignedFreeFunc
 //    );
-//        btAlignedAllocSetCustom(
-//                MemoryPool::btAllocFunc,
-//                MemoryPool::btFreeFunc
-//        );
+        btAlignedAllocSetCustom(
+                MemoryPool::btAllocFunc,
+                MemoryPool::btFreeFunc
+        );
 
 //        BulletMemoryContainer::CollisionStateContainer<MemoryPool::MemoryCustomAllocator<BulletMemoryContainer::CollisionState>> ccs{
 //                MemoryPool::MemoryCustomAllocator<BulletMemoryContainer::CollisionState>(
