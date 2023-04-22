@@ -47,9 +47,6 @@ memoryContainerManager->deleteRawPtr(trimesh);
 
 ```
 
-
-
-
 the Memory Manager
 
 ```
@@ -97,10 +94,14 @@ the Memory Manager
 | |                               (object create provider without smart_ptr (work as raw `new` but allocate in memoryPool))
 | |                                 | newRawPtr + deleteRawPtr
 | | 
+| |     NOTICE: must reset the `BulletMemoryContainerManager` before reset `MemoryCustomAllocatorManager.memoryPool`
+| | 
 | |     |-------------------------------------------------------
 | |     | The hole Bullet and data it used must place in there
 | |     | 
-| |     |
+| |     | 
+| |     |   NOTICE: after reset `MemoryCustomAllocatorManager.memoryPool` , all the Bullet object will be trick out from memory
+| |     |  
 | |     |
 | |     |-------------------------------------------------------
 | |
