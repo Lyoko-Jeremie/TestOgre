@@ -88,7 +88,7 @@ namespace MemoryPool {
 
         void deallocate(void *const memblock) {
             std::lock_guard lg{mtx};
-            auto n = memoryPool.find((unsigned char *) memblock);
+            auto n = memoryPool.find(reinterpret_cast<unsigned char *>(memblock));
             BOOST_ASSERT_MSG(n != memoryPool.end(), "cannot find ptr, bad memory.");
             memoryPool.erase(n);
         }
@@ -98,7 +98,7 @@ namespace MemoryPool {
         template<typename Type>
         void deletePlacement(Type *const memblock) {
             std::lock_guard lg{mtx};
-            auto n = memoryPool.find((unsigned char *) memblock);
+            auto n = memoryPool.find(reinterpret_cast<unsigned char *>(memblock));
             BOOST_ASSERT_MSG(n != memoryPool.end(), "cannot find ptr, bad memory.");
             memblock->~Type();
             memoryPool.erase(n);

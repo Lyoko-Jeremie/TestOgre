@@ -311,7 +311,7 @@ namespace BulletMemoryContainer {
         Type *newRawPtr(Args &&... args) {
             // placement new
 //            return new(pMemoryPoolManager_->allocate(sizeof(Type))) Type(std::forward<Args>(args)...);
-            Type *p = (Type *) pMemoryPoolManager_->allocate(sizeof(Type));
+            Type *p = reinterpret_cast<Type *>(pMemoryPoolManager_->allocate(sizeof(Type)));
             // https://en.cppreference.com/w/cpp/memory/construct_at
             return std::construct_at(p, args...);
         }
