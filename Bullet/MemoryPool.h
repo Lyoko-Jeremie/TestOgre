@@ -15,7 +15,7 @@
 #include <boost/make_unique.hpp>
 #include <boost/smart_ptr/allocate_unique.hpp>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 // this is msvc
 
 // https://stackoverflow.com/questions/32133203/what-can-i-use-instead-of-stdaligned-alloc-in-ms-visual-studio-2013
@@ -69,7 +69,7 @@ namespace MemoryPool {
             // https://stackoverflow.com/questions/41748542/shared-ptr-custom-allocator-together-with-custom-deleter
             // https://en.cppreference.com/w/cpp/memory/c/malloc
             // https://en.cppreference.com/w/cpp/memory/c/free
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 // this is msvc
 
             // https://stackoverflow.com/questions/32133203/what-can-i-use-instead-of-stdaligned-alloc-in-ms-visual-studio-2013

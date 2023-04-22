@@ -4,6 +4,7 @@
 #define TESTOGRE_BULLETMEMORYCONTAINER_H
 
 #include <chrono>
+#include <deque>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -236,7 +237,9 @@ namespace BulletMemoryContainer {
         BulletMemoryContainer::RigidObjectContainer<MemoryPool::MemoryCustomAllocator<RigidObjectType>> roc{
                 MemoryPool::MemoryCustomAllocator<RigidObjectType>(pMemoryPoolManager_)
         };
-        std::unordered_map<void *, boost::weak_ptr<UserPtrBase>> anyManagedPtr;
+
+        // the weak_ptr will keep "control block" alive, so use it carefully
+//        std::deque<boost::weak_ptr<UserPtrBase>> anyManagedPtrTracer;
 
     public:
 
@@ -247,6 +250,10 @@ namespace BulletMemoryContainer {
         auto getMemoryPoolManager() {
             return pMemoryPoolManager_;
         }
+
+//        void cleanManagedPtrTracer() {
+//            anyManagedPtrTracer.clear();
+//        }
 
         template<typename Type, class... Args>
         auto makeSharedPtr(Args &&... args) {
