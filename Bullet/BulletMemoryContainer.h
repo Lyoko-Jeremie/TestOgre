@@ -236,6 +236,7 @@ namespace BulletMemoryContainer {
         BulletMemoryContainer::RigidObjectContainer<MemoryPool::MemoryCustomAllocator<RigidObjectType>> roc{
                 MemoryPool::MemoryCustomAllocator<RigidObjectType>(pMemoryPoolManager_)
         };
+        std::unordered_map<void *, boost::weak_ptr<UserPtrBase>> anyManagedPtr;
 
     public:
 
@@ -245,6 +246,22 @@ namespace BulletMemoryContainer {
 
         auto getMemoryPoolManager() {
             return pMemoryPoolManager_;
+        }
+
+        template<typename Type, class... Args>
+        auto makeSharedPtr(Args &&... args) {
+            return boost::allocate_shared<Type>(
+                    MemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
+                    std::forward<Args>(args)...
+            );
+        }
+
+        template<typename Type, class... Args>
+        MemoryPool::unique_ptr_with_alloc_deleter<Type> makeUniquePtr(Args &&... args) {
+            return boost::allocate_unique<Type>(
+                    MemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
+                    std::forward<Args>(args)...
+            );
         }
 
         template<class... Args>
@@ -260,30 +277,14 @@ namespace BulletMemoryContainer {
 
         template<class... Args>
         auto makeRigidBodyPtr(Args &&... args) {
-            return makePtr<btRigidBody, Args...>(
+            return makeSharedPtr<btRigidBody, Args...>(
                     std::forward<Args>(args)...
             );
         }
 
         template<class... Args>
         auto makeMotionStatePtr(Args &&... args) {
-            return makePtr<btMotionState, Args...>(
-                    std::forward<Args>(args)...
-            );
-        }
-
-        template<typename Type, class... Args>
-        MemoryPool::unique_ptr_with_alloc_deleter<Type> makeUniquePtr(Args &&... args) {
-            return boost::allocate_unique<Type>(
-                    MemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
-                    std::forward<Args>(args)...
-            );
-        }
-
-        template<typename Type, class... Args>
-        auto makePtr(Args &&... args) {
-            return boost::allocate_shared<Type>(
-                    MemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
+            return makeSharedPtr<btMotionState, Args...>(
                     std::forward<Args>(args)...
             );
         }
@@ -293,14 +294,14 @@ namespace BulletMemoryContainer {
                 RigidObjectType::PtrMotionState ptrMotionState_ = nullptr
         ) {
             auto body = roc.emplace_back(
-                    makePtr<RigidObjectType>(ptrRigidBody_, ptrMotionState_)
+                    makeSharedPtr<RigidObjectType>(ptrRigidBody_, ptrMotionState_)
             ).first;
             return *body;
         }
 
         auto makeShape(CollisionShapeType::Ptr shapePtr) {
             auto shape = csc.emplace_back(
-                    makePtr<CollisionShapeType>(shapePtr)
+                    makeSharedPtr<CollisionShapeType>(shapePtr)
             ).first;
             return *shape;
         }

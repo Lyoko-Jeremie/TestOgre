@@ -16,7 +16,7 @@ namespace Ogre {
         boost::shared_ptr<btSphereShape> DynamicsWorld::createSphereCollider(const MovableObject *mo) {
             OgreAssert(mo->getParentSceneNode(), "MovableObject must be attached");
 
-            auto shape = memoryContainerManager_->makePtr<btSphereShape>(mo->getBoundingRadius());
+            auto shape = memoryContainerManager_->makeSharedPtr<btSphereShape>(mo->getBoundingRadius());
             shape->setLocalScaling(convert(mo->getParentSceneNode()->getScale()));
 
             return shape;
@@ -25,7 +25,7 @@ namespace Ogre {
         boost::shared_ptr<btBoxShape> DynamicsWorld::createBoxCollider(const MovableObject *mo) {
             OgreAssert(mo->getParentSceneNode(), "MovableObject must be attached");
 
-            auto shape = memoryContainerManager_->makePtr<btBoxShape>(convert(mo->getBoundingBox().getHalfSize()));
+            auto shape = memoryContainerManager_->makeSharedPtr<btBoxShape>(convert(mo->getBoundingBox().getHalfSize()));
             shape->setLocalScaling(convert(mo->getParentSceneNode()->getScale()));
 
             return shape;
@@ -42,15 +42,15 @@ namespace Ogre {
             // Orient the capsule such that its height is aligned with the largest dimension.
             if (height == sz.y) {
                 radius = std::max(sz.x, sz.z);
-                shape = memoryContainerManager_->makePtr<btCapsuleShape>(radius, 2 * height - 2 * radius);
+                shape = memoryContainerManager_->makeSharedPtr<btCapsuleShape>(radius, 2 * height - 2 * radius);
 //                shape = new btCapsuleShape(radius, 2 * height - 2 * radius);
             } else if (height == sz.x) {
                 radius = std::max(sz.y, sz.z);
-                shape = memoryContainerManager_->makePtr<btCapsuleShapeX>(radius, 2 * height - 2 * radius);
+                shape = memoryContainerManager_->makeSharedPtr<btCapsuleShapeX>(radius, 2 * height - 2 * radius);
 //                shape = new btCapsuleShapeX(radius, 2 * height - 2 * radius);
             } else {
                 radius = std::max(sz.x, sz.y);
-                shape = memoryContainerManager_->makePtr<btCapsuleShapeZ>(radius, 2 * height - 2 * radius);
+                shape = memoryContainerManager_->makeSharedPtr<btCapsuleShapeZ>(radius, 2 * height - 2 * radius);
 //                shape = new btCapsuleShapeZ(radius, 2 * height - 2 * radius);
             }
 
@@ -69,13 +69,13 @@ namespace Ogre {
             boost::shared_ptr<btCylinderShape> shape;
             // Orient the capsule such that its height is aligned with the largest dimension.
             if (height == sz.y()) {
-                shape = memoryContainerManager_->makePtr<btCylinderShape>(sz);
+                shape = memoryContainerManager_->makeSharedPtr<btCylinderShape>(sz);
 //                shape = new btCylinderShape(sz);
             } else if (height == sz.x()) {
-                shape = memoryContainerManager_->makePtr<btCylinderShapeX>(sz);
+                shape = memoryContainerManager_->makeSharedPtr<btCylinderShapeX>(sz);
 //                shape = new btCylinderShapeX(sz);
             } else {
-                shape = memoryContainerManager_->makePtr<btCylinderShapeZ>(sz);
+                shape = memoryContainerManager_->makeSharedPtr<btCylinderShapeZ>(sz);
 //                shape = new btCylinderShapeZ(sz);
             }
 
@@ -209,7 +209,7 @@ namespace Ogre {
             OgreAssert(node, "entity must be attached");
 //            RigidBodyState *state = new RigidBodyState(node);
             // TODO
-            auto state = memoryContainerManager_->makePtr<RigidBodyState>(
+            auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(
                     node
             );
 
@@ -264,7 +264,7 @@ namespace Ogre {
             rb->ptrRigidBody->setUserPointer(new EntityCollisionListener{ent, listener});
 
 //            // transfer ownership to node
-//            auto bodyWrapper = memoryContainerManager_->makePtr<RigidBody>(rb, mBtWorld);
+//            auto bodyWrapper = memoryContainerManager_->makeSharedPtr<RigidBody>(rb, mBtWorld);
 //            node->getUserObjectBindings().setUserAny("BtRigidBody", bodyWrapper);
 
             return rb;
@@ -508,7 +508,7 @@ namespace Ogre {
 //                    mVertexCount,
 //                    sizeof(Vector3)
 //            );
-            auto shape = memoryContainerManager->makePtr<btConvexHullShape>(
+            auto shape = memoryContainerManager->makeSharedPtr<btConvexHullShape>(
                     (btScalar *) &mVertexBuffer[0].x,
                     mVertexCount,
                     (int) sizeof(Vector3)
@@ -561,7 +561,7 @@ namespace Ogre {
 
             const bool useQuantizedAABB = true;
 //            btBvhTriangleMeshShape *shape = new btBvhTriangleMeshShape(trimesh, useQuantizedAABB);
-            auto shape = memoryContainerManager->makePtr<btBvhTriangleMeshShape>(trimesh, useQuantizedAABB);
+            auto shape = memoryContainerManager->makeSharedPtr<btBvhTriangleMeshShape>(trimesh, useQuantizedAABB);
 
             shape->setLocalScaling(convert(mScale));
 

@@ -23,9 +23,9 @@ MemoryPool::gpMemoryPoolManager.reset();
 
 ```c++
 
-auto state = memoryContainerManager_->makePtr<RigidBodyState>(node);
+auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(node);
 
-auto shape = memoryContainerManager->makePtr<btBvhTriangleMeshShape>(trimesh, useQuantizedAABB);
+auto shape = memoryContainerManager->makeSharedPtr<btBvhTriangleMeshShape>(trimesh, useQuantizedAABB);
 
 auto rb = memoryContainerManager_->makeBody(
 memoryContainerManager_->makeRigidBodyPtr(
@@ -92,7 +92,7 @@ the Memory Manager
 | |                                 |   + makeRigidBodyPtr
 | |                                 |   + makeMotionStatePtr
 | |                               (object create provider)
-| |                                 | makePtr (make_shared)
+| |                                 | makeSharedPtr (make_shared)
 | |                                 | makeUniquePtr (make_unique)
 | |                               (object create provider without smart_ptr (work as raw `new` but allocate in memoryPool))
 | |                                 | newRawPtr + deleteRawPtr
