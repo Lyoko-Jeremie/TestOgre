@@ -78,34 +78,35 @@ namespace Ogre {
 
         class DebugDrawer : public btIDebugDraw {
             SceneNode *mNode;
-            btDynamicsWorld *mWorld;
 
             ManualObject mLines;
             int mDebugMode;
 
         public:
-            DebugDrawer(SceneNode *node, btDynamicsWorld *world)
-                    : mNode(node), mWorld(world), mLines(""), mDebugMode(DBG_DrawWireframe) {
+            explicit DebugDrawer(SceneNode *node)
+                    : mNode(node),
+                      mLines(""),
+                      mDebugMode(DBG_DrawWireframe) {
                 mLines.setCastShadows(false);
                 mNode->attachObject(&mLines);
-                mWorld->setDebugDrawer(this);
             }
 
-            void update() {
+            void updateDebugDrawWorld(btDynamicsWorld *mWorld) {
                 mWorld->debugDrawWorld();
-                if (!mLines.getSections().empty()) // begin was called
+                if (!mLines.getSections().empty()) // `mLines.begin` was called
                     mLines.end();
             }
 
             void drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color) override;
 
-            void
-            drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB, btScalar distance, int lifeTime,
-                             const btVector3 &color) override {
+            void drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB,
+                                  btScalar distance, int lifeTime,
+                                  const btVector3 &color) override {
                 drawLine(PointOnB, PointOnB + normalOnB * distance * 20, color);
             }
 
             void reportErrorWarning(const char *warningString) override {
+                // TODO
                 LogManager::getSingleton().logWarning(warningString);
             }
 
@@ -122,7 +123,6 @@ namespace Ogre {
 
             int getDebugMode() const override { return mDebugMode; }
         };
-
 
 
         /// simplified wrapper with automatic memory management
@@ -152,7 +152,8 @@ namespace Ogre {
                               &*mBroadphase,
                               &*mSolver,
                               &*mCollisionConfig
-                      )) {
+                      )),
+                      mDebugDrawer(nullptr) {
                 mBtWorld->setGravity(convert(gravity));
                 // TODO
 //                mBtWorld->setInternalTickCallback(onTick);
@@ -182,6 +183,37 @@ namespace Ogre {
             /// create capsule collider using ogre provided data
             boost::shared_ptr<btCylinderShape> createCylinderCollider(const MovableObject *mo);
 
+
+        private:
+
+            boost::shared_ptr<DebugDrawer> mDebugDrawer;
+
+        public:
+
+            void initDebugDrawer(SceneNode *node) {
+                if (node == nullptr) {
+                    mBtWorld->setDebugDrawer(nullptr);
+                    return;
+                }
+                if (mDebugDrawer) {
+                    mBtWorld->setDebugDrawer(nullptr);
+                }
+                mDebugDrawer = memoryContainerManager_->makeSharedPtr<DebugDrawer>(node);
+                mBtWorld->setDebugDrawer(mDebugDrawer.get());
+            }
+
+            int setDebugMode(int mode) {
+                if (mDebugDrawer) {
+                    mDebugDrawer->setDebugMode(mode);
+                }
+                return getDebugMode();
+            }
+
+            int getDebugMode() const { return mDebugDrawer && mDebugDrawer->getDebugMode(); }
+
+            void updateDebugDrawWorld() {
+                mDebugDrawer->updateDebugDrawWorld(&*mBtWorld);
+            }
         };
 /** @} */
 /** @} */
