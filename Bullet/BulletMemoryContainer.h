@@ -309,7 +309,10 @@ namespace BulletMemoryContainer {
         template<typename Type, class... Args>
         Type *newRawPtr(Args &&... args) {
             // placement new
-            return new(pMemoryPoolManager_->allocate(sizeof(Type))) Type(std::forward<Args>(args)...);
+//            return new(pMemoryPoolManager_->allocate(sizeof(Type))) Type(std::forward<Args>(args)...);
+            Type *p = pMemoryPoolManager_->allocate(sizeof(Type));
+            // https://en.cppreference.com/w/cpp/memory/construct_at
+            return std::construct_at(p, args...);
         }
 
         template<typename Type>
