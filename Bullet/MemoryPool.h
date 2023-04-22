@@ -4,21 +4,35 @@
 #define TESTOGRE_MEMORYPOOL_H
 
 #include <mutex>
+#include <cstdlib>
+// when use boost::shared_ptr (boost::allocate_shared), both the data and control block are allocated use the given allocator
+// but the c++ standard not define this, std::shared_ptr (std::allocate_shared) , it's impl defined.
+// see https://stackoverflow.com/questions/68041405/who-allocates-the-memory-for-control-block-of-shared-ptr-when-using-custom-new
+// so, don't use std::shared_ptr when you want to use the memory pool
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/make_unique.hpp>
 #include <boost/smart_ptr/allocate_unique.hpp>
 
+#ifdef _MSC_VER
+// this is msvc
+
+// https://stackoverflow.com/questions/32133203/what-can-i-use-instead-of-stdaligned-alloc-in-ms-visual-studio-2013
+#include <malloc.h>
+
+#endif
+
 namespace MemoryPool {
 
     class MemoryCustomAllocatorManager : public boost::enable_shared_from_this<MemoryCustomAllocatorManager> {
     private:
         using DataType = unsigned char[];
+        using DataTypePtr = unsigned char *;
 
         // we need the allocated memory pined at a place, so don't use std::vector replace smart ptr
         // when item erase, the memory block will deallocate by boost::shared_ptr
-        std::unordered_map<unsigned char *, boost::shared_ptr<DataType>> memoryPool;
+        std::unordered_map<DataTypePtr, boost::shared_ptr<DataType>> memoryPool;
         std::mutex mtx;
 
     public:
@@ -29,9 +43,44 @@ namespace MemoryPool {
         }
 
         void *allocate(const size_t size) {
+            // https://en.cppreference.com/w/cpp/memory/c/malloc
+            // The following functions are required to be thread-safe:
+            //    * The library versions of operator new and operator delete
+            //    * User replacement versions of global operator new and operator delete
+            //    * std::calloc, std::malloc, std::realloc, std::aligned_alloc (since C++17), std::free
+            // Calls to these functions that allocate or deallocate a particular unit of storage occur in a single total order, and each such deallocation call happens-before the next allocation (if any) in this order.
+            //     --------(since C++11)
+            //
+            // So, the lock must protect hole new operate , don't try to smaller the lock area
+            std::lock_guard lg{mtx};
             auto b = boost::make_shared<DataType>(size);
+            // https://stackoverflow.com/questions/41748542/shared-ptr-custom-allocator-together-with-custom-deleter
+            // https://en.cppreference.com/w/cpp/memory/c/malloc
+            // https://en.cppreference.com/w/cpp/memory/c/free
+            // auto b = boost::shared_ptr<DataType>((unsigned char *) std::malloc(size), std::free);
             if (b) {
-                std::lock_guard lg{mtx};
+                memoryPool.emplace(std::make_pair(b.get(), b));
+            }
+            return b.get();
+        }
+
+        void *allocateAligned(const size_t size, const size_t alignment) {
+            std::lock_guard lg{mtx};
+            // https://stackoverflow.com/questions/41748542/shared-ptr-custom-allocator-together-with-custom-deleter
+            // https://en.cppreference.com/w/cpp/memory/c/malloc
+            // https://en.cppreference.com/w/cpp/memory/c/free
+#ifdef _MSC_VER
+// this is msvc
+
+            // https://stackoverflow.com/questions/32133203/what-can-i-use-instead-of-stdaligned-alloc-in-ms-visual-studio-2013
+            auto b = boost::shared_ptr<DataType>((DataTypePtr) _aligned_malloc(size, alignment), _aligned_free);
+
+#else // other that support c++17 std::aligned_alloc
+            // https://en.cppreference.com/w/cpp/memory/c/aligned_alloc
+            auto b = boost::shared_ptr<DataType>((unsigned char *) std::aligned_alloc(size), std::free);
+
+#endif
+            if (b) {
                 memoryPool.emplace(std::make_pair(b.get(), b));
             }
             return b.get();

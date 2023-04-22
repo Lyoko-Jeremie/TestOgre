@@ -18,10 +18,10 @@ namespace MemoryPool {
 //        MemoryPool::gpMemoryPoolManager = boost::make_shared<MemoryPool::MemoryCustomAllocatorManager>();
 
 
-//    btAlignedAllocSetCustomAligned(
-//            MemoryPool::btAlignedAllocFunc,
-//            MemoryPool::btAlignedFreeFunc
-//    );
+        btAlignedAllocSetCustomAligned(
+                MemoryPool::btAlignedAllocFunc,
+                MemoryPool::btAlignedFreeFunc
+        );
         btAlignedAllocSetCustom(
                 MemoryPool::btAllocFunc,
                 MemoryPool::btFreeFunc
@@ -107,7 +107,7 @@ namespace MemoryPool {
     }
 
     void *btAlignedAllocFunc(size_t size, int alignment) {
-        return gpMemoryPoolManager->allocate(size);
+        return gpMemoryPoolManager->allocateAligned(size, alignment);
     }
 
     void btAlignedFreeFunc(void *memblock) {
