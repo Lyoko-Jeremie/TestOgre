@@ -87,25 +87,26 @@ namespace Ogre::Bullet {
         CollisionListener *listener;
     };
 
-//        // TODO
-//        static void onTick(btDynamicsWorld *world, btScalar timeStep) {
-//            int numManifolds = world->getDispatcher()->getNumManifolds();
-//            auto manifolds = world->getDispatcher()->getInternalManifoldPointer();
-//            for (int i = 0; i < numManifolds; i++) {
-//                btPersistentManifold *manifold = manifolds[i];
+//    // TODO
+//    static void onTick2(btDynamicsWorld *world, btScalar timeStep) {
+//        int numManifolds = world->getDispatcher()->getNumManifolds();
+//        auto manifolds = world->getDispatcher()->getInternalManifoldPointer();
+//        for (int i = 0; i < numManifolds; i++) {
+//            btPersistentManifold *manifold = manifolds[i];
 //
-//                for (int j = 0; j < manifold->getNumContacts(); j++) {
-//                    const btManifoldPoint &mp = manifold->getContactPoint(i);
-//                    // TODO
-//                    auto body0 = static_cast<EntityCollisionListener *>(manifold->getBody0()->getUserPointer());
-//                    auto body1 = static_cast<EntityCollisionListener *>(manifold->getBody1()->getUserPointer());
-//                    if (body0->listener)
-//                        body0->listener->contact(body1->entity, mp);
-//                    if (body1->listener)
-//                        body1->listener->contact(body0->entity, mp);
-//                }
+//            for (int j = 0; j < manifold->getNumContacts(); j++) {
+//                const btManifoldPoint &mp = manifold->getContactPoint(i);
+//                // TODO
+//                auto body0 = static_cast<EntityCollisionListener *>(manifold->getBody0()->getUserPointer());
+//                auto body1 = static_cast<EntityCollisionListener *>(manifold->getBody1()->getUserPointer());
+//                if (body0->listener)
+//                    body0->listener->contact(body1->entity, mp);
+//                if (body1->listener)
+//                    body1->listener->contact(body0->entity, mp);
 //            }
 //        }
+//    }
+
 
 
     /// wrapper with automatic memory management
@@ -125,7 +126,7 @@ namespace Ogre::Bullet {
             delete mBtBody;
         }
 
-        btRigidBody *getBtBody() const { return mBtBody; }
+        [[nodiscard]] btRigidBody *getBtBody() const { return mBtBody; }
     };
 //        class RigidBody {
 //            btRigidBody *mBtBody;
@@ -147,7 +148,8 @@ namespace Ogre::Bullet {
 
 
     boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
-    DynamicsWorld::addRigidBody(float mass, Entity *ent,
+    DynamicsWorld::addRigidBody(float mass,
+                                Entity *ent,
                                 ColliderType ct,
                                 CollisionListener *listener,
                                 int group, int mask) {
