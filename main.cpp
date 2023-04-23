@@ -749,12 +749,12 @@ std::shared_ptr<TtfMeshData> createTtfMesh(Ogre::SceneManager *scnMgr,
     }
 
     {
-        try {
+        if (scnMgr->hasManualObject(nameList.at(0))) {
             auto o = scnMgr->getManualObject(nameList.at(0));
-            auto m = Ogre::MeshManager::getSingleton().getByName(nameList.at(1));
             if (o) {
                 std::cout << "o exist : " << nameList.at(0) << std::endl;
             }
+            auto m = Ogre::MeshManager::getSingleton().getByName(nameList.at(1));
             if (m) {
                 std::cout << "m exist : " << nameList.at(1) << std::endl;
                 return std::make_shared<TtfMeshData>(
@@ -762,8 +762,6 @@ std::shared_ptr<TtfMeshData> createTtfMesh(Ogre::SceneManager *scnMgr,
                         m
                 );
             }
-        } catch (...) {
-            // ignore
         }
     }
 
