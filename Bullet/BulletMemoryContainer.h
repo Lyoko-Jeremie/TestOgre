@@ -186,9 +186,10 @@ namespace BulletMemoryContainer {
         }
     };
 
+    using CollisionStateContainerItemType = boost::shared_ptr<CollisionState>;
     template<typename Allocator=std::allocator<CollisionState>>
     using CollisionStateContainer = boost::multi_index_container<
-            boost::shared_ptr<CollisionState>,
+            CollisionStateContainerItemType,
             boost::multi_index::indexed_by<
                     boost::multi_index::sequenced<>,
                     boost::multi_index::ordered_unique<
@@ -221,7 +222,6 @@ namespace BulletMemoryContainer {
     public:
 
         using CollisionStateType = BulletMemoryContainer::CollisionState;
-        using CollisionStateContainerItemType = boost::shared_ptr<BulletMemoryContainer::CollisionState>;
         using CollisionShapeType = BulletMemoryContainer::CollisionShape;
         using RigidObjectType = BulletMemoryContainer::RigidObject;
 

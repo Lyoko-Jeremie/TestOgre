@@ -280,8 +280,7 @@ namespace Ogre::Bullet {
                         if ((*it)->lastCheckTime != nowStep) {
                             // collision
                             ccs.get<BulletMemoryContainer::CollisionState::ID>()
-                                    .modify(it, [nowStep](
-                                            BulletMemoryContainer::BulletMemoryContainerManager::CollisionStateContainerItemType &a) {
+                                    .modify(it, [nowStep](BulletMemoryContainer::CollisionStateContainerItemType &a) {
                                         a->lastCheckTime = nowStep;
                                         a->state = BulletMemoryContainer::CollisionState::State::collision;
                                     });
@@ -317,8 +316,7 @@ namespace Ogre::Bullet {
 
 
         // remove event ended
-        ccs.remove_if([nowStep](
-                const BulletMemoryContainer::BulletMemoryContainerManager::CollisionStateContainerItemType &a) {
+        ccs.remove_if([nowStep](const BulletMemoryContainer::CollisionStateContainerItemType &a) {
             return a->lastCheckTime != nowStep;
         });
 
