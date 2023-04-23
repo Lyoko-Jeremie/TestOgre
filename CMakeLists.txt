@@ -109,7 +109,9 @@ set(OgreBullet
         ./Bullet/BulletMemoryContainer.h
         ./Bullet/BulletMemoryContainer.cpp
         ./Bullet/MemoryPool.cpp
-        ./Bullet/MemoryPool.h)
+        ./Bullet/MemoryPool.h
+        ./Bullet/VertexIndexToShape.cpp
+        ./Bullet/VertexIndexToShape.h)
 include_directories(./Bullet)
 
 include_directories(${BULLET_INCLUDE_DIRS})

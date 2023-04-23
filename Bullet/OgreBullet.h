@@ -16,13 +16,7 @@
 namespace Ogre {
     namespace Bullet {
 
-        /** \addtogroup Optional
-        *  @{
-        */
-        /** \defgroup Bullet Bullet
-         * [Bullet-Physics](https://pybullet.org) to %Ogre connection
-         * @{
-         */
+
         enum ColliderType {
             CT_BOX,
             CT_SPHERE,
@@ -47,7 +41,7 @@ namespace Ogre {
             Node *mNode;
 
         public:
-            RigidBodyState(Node *node) : mNode(node) {}
+            explicit RigidBodyState(Node *node) : mNode(node) {}
 
             void getWorldTransform(btTransform &ret) const override {
                 ret = btTransform(convert(mNode->getOrientation()), convert(mNode->getPosition()));
@@ -62,13 +56,13 @@ namespace Ogre {
         };
 
         struct CollisionListener {
-            virtual ~CollisionListener() {}
+            virtual ~CollisionListener() = default;
 
             virtual void contact(const MovableObject *other, const btManifoldPoint &manifoldPoint) = 0;
         };
 
         struct RayResultCallback {
-            virtual ~RayResultCallback() {}
+            virtual ~RayResultCallback() = default;
 
             virtual void addSingleResult(const MovableObject *other, float distance) = 0;
         };
@@ -215,8 +209,7 @@ namespace Ogre {
                 mDebugDrawer->updateDebugDrawWorld(&*mBtWorld);
             }
         };
-/** @} */
-/** @} */
+
     } // namespace Bullet
 } // namespace Ogre
 
