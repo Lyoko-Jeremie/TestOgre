@@ -15,13 +15,7 @@
 #include <boost/make_unique.hpp>
 #include <boost/smart_ptr/allocate_unique.hpp>
 
-#if defined(_MSC_VER)
-// this is msvc
-
-// https://stackoverflow.com/questions/32133203/what-can-i-use-instead-of-stdaligned-alloc-in-ms-visual-studio-2013
-#include <malloc.h>
-
-#endif
+#include <boost/align/aligned_alloc.hpp>
 
 namespace MemoryPool {
 
@@ -69,17 +63,10 @@ namespace MemoryPool {
             // https://stackoverflow.com/questions/41748542/shared-ptr-custom-allocator-together-with-custom-deleter
             // https://en.cppreference.com/w/cpp/memory/c/malloc
             // https://en.cppreference.com/w/cpp/memory/c/free
-#if defined(_MSC_VER)
-// this is msvc
-
-            // https://stackoverflow.com/questions/32133203/what-can-i-use-instead-of-stdaligned-alloc-in-ms-visual-studio-2013
-            auto b = boost::shared_ptr<DataType>((DataTypePtr) _aligned_malloc(size, alignment), _aligned_free);
-
-#else // other that support c++17 std::aligned_alloc
-            // https://en.cppreference.com/w/cpp/memory/c/aligned_alloc
-            auto b = boost::shared_ptr<DataType>((unsigned char *) std::aligned_alloc(size), std::free);
-
-#endif
+            auto b = boost::shared_ptr<DataType>(
+                    (unsigned char *) boost::alignment::aligned_alloc(alignment, size),
+                    boost::alignment::aligned_free
+            );
             if (b) {
                 memoryPool.emplace(std::make_pair(b.get(), b));
             }
