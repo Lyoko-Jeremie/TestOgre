@@ -163,7 +163,7 @@ namespace BulletMemoryContainer {
         };
 
         State state;
-        std::chrono::steady_clock::time_point lastCheckTime;
+        size_t lastCheckTime;
 
         boost::shared_ptr<UserPtrBase> userPtr;
 
@@ -171,7 +171,7 @@ namespace BulletMemoryContainer {
                 int idA_,
                 int idB_,
                 State state_,
-                std::chrono::steady_clock::time_point lastCheckTime_
+                size_t lastCheckTime_
         ) : idA(idA_), idB(idB_), state(state_), lastCheckTime(lastCheckTime_) {}
 
 
@@ -221,6 +221,7 @@ namespace BulletMemoryContainer {
     public:
 
         using CollisionStateType = BulletMemoryContainer::CollisionState;
+        using CollisionStateContainerItemType = boost::shared_ptr<BulletMemoryContainer::CollisionState>;
         using CollisionShapeType = BulletMemoryContainer::CollisionShape;
         using RigidObjectType = BulletMemoryContainer::RigidObject;
 
@@ -242,6 +243,10 @@ namespace BulletMemoryContainer {
 //        std::deque<boost::weak_ptr<UserPtrBase>> anyManagedPtrTracer;
 
     public:
+
+        auto &getCollisionStateContainer() {
+            return ccs;
+        }
 
         explicit BulletMemoryContainerManager(
                 boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager
