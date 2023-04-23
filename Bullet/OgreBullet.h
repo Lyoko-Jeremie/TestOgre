@@ -133,30 +133,33 @@ namespace Ogre {
         public:
             explicit DynamicsWorld(
                     boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager,
-                    const Vector3 &gravity)
-                    : memoryContainerManager_(std::move(memoryContainerManager)),
-                      mCollisionConfig(memoryContainerManager_->makeUniquePtr<btDefaultCollisionConfiguration>()),
-                      mDispatcher(memoryContainerManager_->makeUniquePtr<btCollisionDispatcher>(
-                              &*mCollisionConfig
-                      )),
-                      mBroadphase(memoryContainerManager_->makeUniquePtr<btDbvtBroadphase>()),
-                      mSolver(memoryContainerManager_->makeUniquePtr<btSequentialImpulseConstraintSolver>()),
-                      mBtWorld(memoryContainerManager_->makeUniquePtr<btDiscreteDynamicsWorld>(
-                              &*mDispatcher,
-                              &*mBroadphase,
-                              &*mSolver,
-                              &*mCollisionConfig
-                      )),
-                      mDebugDrawer(nullptr) {
+                    const Vector3 &gravity
+            ) : memoryContainerManager_(std::move(memoryContainerManager)),
+                mCollisionConfig(memoryContainerManager_->makeUniquePtr<btDefaultCollisionConfiguration>()),
+                mDispatcher(memoryContainerManager_->makeUniquePtr<btCollisionDispatcher>(
+                        &*mCollisionConfig
+                )),
+                mBroadphase(memoryContainerManager_->makeUniquePtr<btDbvtBroadphase>()),
+                mSolver(memoryContainerManager_->makeUniquePtr<btSequentialImpulseConstraintSolver>()),
+                mBtWorld(memoryContainerManager_->makeUniquePtr<btDiscreteDynamicsWorld>(
+                        &*mDispatcher,
+                        &*mBroadphase,
+                        &*mSolver,
+                        &*mCollisionConfig
+                )),
+                mDebugDrawer(nullptr) {
+
+
                 mBtWorld->setGravity(convert(gravity));
-                // TODO
 //                mBtWorld->setInternalTickCallback(onTick);
             }
 
             ~DynamicsWorld() = default;
 
             boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
-            addRigidBody(float mass, Entity *ent, ColliderType ct,
+            addRigidBody(float mass,
+                         Entity *ent,
+                         ColliderType ct,
                          CollisionListener *listener = nullptr,
                          int group = 1, int mask = -1);
 
@@ -177,10 +180,18 @@ namespace Ogre {
             /// create capsule collider using ogre provided data
             boost::shared_ptr<btCylinderShape> createCylinderCollider(const MovableObject *mo);
 
+            void stepSimulation(float timeStep, int maxSubSteps = 1,
+                                float fixedTimeStep = btScalar(1.) / btScalar(60.)) {
+                ++simulationStepNow;
+                mBtWorld->stepSimulation(timeStep, maxSubSteps, fixedTimeStep);
+                this->onTick();
+            }
 
         private:
 
             boost::shared_ptr<DebugDrawer> mDebugDrawer;
+
+            size_t simulationStepNow = 0;
 
         public:
 
@@ -208,6 +219,93 @@ namespace Ogre {
             void updateDebugDrawWorld() {
                 mDebugDrawer->updateDebugDrawWorld(&*mBtWorld);
             }
+
+
+        private:
+
+            void onTick() {
+                auto nowStep = simulationStepNow;
+                auto &ccs = memoryContainerManager_->getCollisionStateContainer();
+
+                // https://github.com/enable3d/enable3d/blob/faedc9b90fa01f676b8bcddbbf1a8274512e691c/packages/ammoPhysics/src/physics.ts
+                for (int i = 0; i < mDispatcher->getNumManifolds(); ++i) {
+                    auto contactManifold = mDispatcher->getManifoldByIndexInternal(i);
+
+                    auto b0 = contactManifold->getBody0();
+                    auto b1 = contactManifold->getBody1();
+//            auto rb0 = btRigidBody::upcast(b0);
+//            auto rb1 = btRigidBody::upcast(b1);
+
+                    int idA = b0->getUserIndex();
+                    int idB = b1->getUserIndex();
+
+                    if (idA < 1 && idB < 1) {
+                        // invalid object
+                        continue;
+                    }
+
+                    if (idA > idB)
+                        std::exchange(idA, idB);
+
+                    for (int j = 0; j < contactManifold->getNumContacts(); ++j) {
+                        auto contactPoint = contactManifold->getContactPoint(j);
+                        auto distance = contactPoint.getDistance();
+
+
+                        // Distance definition: when the distance between objects is positive, they are separated. When the distance is negative, they are penetrating. Zero distance means exactly touching.
+                        // https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=5831
+                        if (distance <= 0) {
+
+                            auto it = ccs.get<BulletMemoryContainer::CollisionState::ID>()
+                                    .find(std::make_tuple(idA, idB));
+                            if (it != ccs.get<BulletMemoryContainer::CollisionState::ID>().end()) {
+                                if ((*it)->lastCheckTime != nowStep) {
+                                    // collision
+                                    ccs.get<BulletMemoryContainer::CollisionState::ID>()
+                                            .modify(it, [nowStep](
+                                                    BulletMemoryContainer::BulletMemoryContainerManager::CollisionStateContainerItemType &a) {
+                                                a->lastCheckTime = nowStep;
+                                                a->state = BulletMemoryContainer::CollisionState::State::collision;
+                                            });
+                                } else {
+                                    // don't touch it
+                                }
+                            } else {
+                                // start
+                                memoryContainerManager_->makeCollisionState(
+                                        idA, idB, BulletMemoryContainer::CollisionState::State::start, nowStep
+                                );
+                            }
+
+                            break;
+                        }
+                    }
+                }
+
+//                // TODO trigger event
+//                for (const auto &a: ccs) {
+//                    if (a->lastCheckTime == nowStep) {
+//                        // a->state;
+//                        if (a->state == BulletMemoryContainer::CollisionState::State::start) {
+//                            BOOST_LOG_TRIVIAL(trace) << a->idA << "-" << a->idB << " start";
+//                        } else if (a->state == BulletMemoryContainer::CollisionState::State::collision) {
+//                            BOOST_LOG_TRIVIAL(trace) << a->idA << "-" << a->idB << " collision";
+//                        }
+//                    } else {
+//                        // end
+//                        BOOST_LOG_TRIVIAL(trace) << a->idA << "-" << a->idB << " end";
+//                    }
+//                }
+
+
+                // remove event ended
+                ccs.remove_if([nowStep](
+                        const BulletMemoryContainer::BulletMemoryContainerManager::CollisionStateContainerItemType &a) {
+                    return a->lastCheckTime != nowStep;
+                });
+
+            }
+
         };
 
     } // namespace Bullet
