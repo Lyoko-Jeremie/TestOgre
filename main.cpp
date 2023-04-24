@@ -1199,6 +1199,16 @@ int main() {
 //        }
     }
 
+
+    // must destroy before ctx, and before bulletMemoryContainerManager
+    dynamicsWorld.reset();
+    // must destroy before MemoryPool::gpMemoryPoolManager
+    bulletMemoryContainerManager.reset();
+
+    // after destroy gpMemoryPoolManager , never call Bullet again
+    MemoryPool::gpMemoryPoolManager.reset();
+
+
     ctx->closeApp();
 
 
