@@ -164,6 +164,9 @@ namespace Ogre {
             addRigidBody(float mass,
                          Entity *ent,
                          ColliderType ct,
+                         const boost::shared_ptr<OgreBites::ApplicationContext> &ctx,
+                         Ogre::Root *root,
+                         Ogre::SceneManager *scnMgr,
                          CollisionListener *listener = nullptr,
                          int group = 1, int mask = -1);
 
@@ -231,7 +234,11 @@ namespace Ogre {
 
         public:
 
-            struct Bullet2OgreTracer : public boost::enable_shared_from_this<Bullet2OgreTracer> {
+            struct Bullet2OgreTracer
+                    : public BulletMemoryContainer::UserPtrBase,
+                      public boost::enable_shared_from_this<Bullet2OgreTracer> {
+
+//                const std::string typeName{"Bullet2OgreTracer"};
 
                 // ------ memory host information ------
                 boost::weak_ptr<OgreBites::ApplicationContext> pCtx;
@@ -249,14 +256,21 @@ namespace Ogre {
                         Ogre::Root *root,
                         Ogre::SceneManager *scnMgr,
                         Entity *ent
-                ) : pCtx(ctx), root(root), scnMgr(scnMgr), entity(ent) {
+                ) : BulletMemoryContainer::UserPtrBase{"Bullet2OgreTracer"},
+                    pCtx(ctx), root(root), scnMgr(scnMgr), entity(ent) {
                     BOOST_ASSERT_MSG(
                             !pCtx.expired() && root && scnMgr && sceneNode && entity,
-                            "Bullet2OgreTracer invalid Ogre info"
+                            "Bullet2OgreTracer() invalid Ogre info"
                     );
                     sceneNode = ent->getParentSceneNode();
                     sceneNodeName = sceneNode->getName();
+                    BOOST_ASSERT_MSG(
+                            sceneNode || !sceneNodeName.empty(),
+                            "Bullet2OgreTracer() sceneNode||sceneNodeName must valid at lest one"
+                    );
                 }
+
+                ~Bullet2OgreTracer() override = default;
 
 
                 /** check the scene still valid and the node still in the scene

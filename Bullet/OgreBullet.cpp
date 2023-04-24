@@ -151,12 +151,19 @@ namespace Ogre::Bullet {
     DynamicsWorld::addRigidBody(float mass,
                                 Entity *ent,
                                 ColliderType ct,
+                                const boost::shared_ptr<OgreBites::ApplicationContext> &ctx,
+                                Ogre::Root *root,
+                                Ogre::SceneManager *scnMgr,
                                 CollisionListener *listener,
                                 int group, int mask) {
         auto node = ent->getParentSceneNode();
         OgreAssert(node, "entity must be attached to a SceneNode");
         auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(
                 node
+        );
+
+        auto bullet2OgreTracer = memoryContainerManager_->makeSharedPtr<Bullet2OgreTracer>(
+                ctx, root, scnMgr, ent
         );
 
         if (ent->hasSkeleton()) {
@@ -207,6 +214,7 @@ namespace Ogre::Bullet {
         );
         mBtWorld->addRigidBody(rb->ptrRigidBody.get(), group, mask);
         rb->ptrRigidBody->setUserPointer(new EntityCollisionListener{ent, listener});
+        rb->userPtr = bullet2OgreTracer;
 
 //            // transfer ownership to node
 //            auto bodyWrapper = memoryContainerManager_->makeSharedPtr<RigidBody>(rb, mBtWorld);
