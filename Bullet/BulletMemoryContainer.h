@@ -32,7 +32,13 @@ namespace BulletMemoryContainer {
 
     class UserPtrBase {
     public:
-        virtual ~UserPtrBase() = 0;
+        const std::string typeName;
+
+        UserPtrBase() = delete;
+
+        UserPtrBase(const std::string& typeName) : typeName(typeName) {}
+
+        virtual ~UserPtrBase() = default;
     };
 
     struct CollisionShape {
