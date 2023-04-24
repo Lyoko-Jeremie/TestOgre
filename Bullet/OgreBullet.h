@@ -98,7 +98,7 @@ namespace Ogre {
             void setDebugMode(int mode) override {
                 mDebugMode = mode;
 
-                if (mDebugMode == DBG_NoDebug)
+                if (mDebugMode == btIDebugDraw::DebugDrawModes::DBG_NoDebug)
                     clear();
             }
 
@@ -341,7 +341,7 @@ namespace Ogre {
             const decltype(mBtWorld) &getBtWorld() const { return mBtWorld; }
 
             void rayTest(const Ray &ray,
-                         const boost::shared_ptr<btCollisionWorld::RayResultCallback>& callback,
+                         const boost::shared_ptr<btCollisionWorld::RayResultCallback> &callback,
                          float maxDist);
 
 
@@ -388,6 +388,11 @@ namespace Ogre {
                 mBtWorld->setDebugDrawer(mDebugDrawer.get());
             }
 
+            /**
+             *
+             * @param mode  btIDebugDraw::DebugDrawModes
+             * @return mode
+             */
             int setDebugMode(int mode) {
                 if (mDebugDrawer) {
                     mDebugDrawer->setDebugMode(mode);
@@ -395,7 +400,9 @@ namespace Ogre {
                 return getDebugMode();
             }
 
-            int getDebugMode() const { return mDebugDrawer && mDebugDrawer->getDebugMode(); }
+            int getDebugMode() const {
+                return mDebugDrawer ? mDebugDrawer->getDebugMode() : btIDebugDraw::DebugDrawModes::DBG_NoDebug;
+            }
 
             void updateDebugDrawWorld() {
                 mDebugDrawer->updateDebugDrawWorld(&*mBtWorld);

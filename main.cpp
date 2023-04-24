@@ -839,9 +839,6 @@ int main() {
             bulletMemoryContainerManager, {0, -10, 0}
     );
 
-
-    dynamicsWorld->getBtWorld();
-
     Ogre::Bullet::BodyHelper::createInfiniteGround(
             dynamicsWorld
     );
@@ -872,6 +869,18 @@ int main() {
     Ogre::RTShader::ShaderGenerator *shadergen = Ogre::RTShader::ShaderGenerator::getSingletonPtr();
     shadergen->addSceneManager(scnMgr);
 
+
+    dynamicsWorld->initDebugDrawer(scnMgr->getRootSceneNode());
+    dynamicsWorld->setDebugMode(
+            btIDebugDraw::DebugDrawModes::DBG_DrawWireframe |
+            btIDebugDraw::DebugDrawModes::DBG_DrawAabb |
+            btIDebugDraw::DebugDrawModes::DBG_DrawConstraintLimits |
+            btIDebugDraw::DebugDrawModes::DBG_DrawContactPoints |
+            btIDebugDraw::DebugDrawModes::DBG_DrawFrames |
+            btIDebugDraw::DebugDrawModes::DBG_DrawNormals |
+            btIDebugDraw::DebugDrawModes::DBG_DrawText |
+            btIDebugDraw::DebugDrawModes::DBG_EnableCCD
+    );
 
 
     // without light we would just get a black screen
@@ -954,12 +963,12 @@ int main() {
     vp->setBackgroundColour(Ogre::ColourValue(1, 0, 1));
 
 
-    {
-        // finally something to render
-        Ogre::Entity *ent = scnMgr->createEntity("Sinbad.mesh");
-        Ogre::SceneNode *node = scnMgr->getRootSceneNode()->createChildSceneNode();
-        node->attachObject(ent);
-    }
+//    {
+//        // finally something to render
+//        Ogre::Entity *ent = scnMgr->createEntity("Sinbad.mesh");
+//        Ogre::SceneNode *node = scnMgr->getRootSceneNode()->createChildSceneNode();
+//        node->attachObject(ent);
+//    }
     {
         // https://ogrecave.github.io/ogre/api/latest/tut__lights_cameras_shadows.html
         Ogre::Entity *ninjaEntity = scnMgr->createEntity("ninja.mesh");
@@ -1174,6 +1183,7 @@ int main() {
     ctx->getRoot()->clearEventTimes();
 
     while (!ctx->getRoot()->endRenderingQueued()) {
+        dynamicsWorld->stepSimulation(1 / 60.f);
         ctx->getRoot()->renderOneFrame();
 //        if (ctx->getRenderWindow()->isActive() || ctx->getRenderWindow()->isVisible()) {
 //            if (!ctx->getRoot()->renderOneFrame()) {
