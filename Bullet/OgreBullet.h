@@ -17,7 +17,7 @@ namespace Ogre {
     namespace Bullet {
 
 
-        enum ColliderType {
+        enum class ColliderType {
             CT_BOX,
             CT_SPHERE,
             CT_CYLINDER,

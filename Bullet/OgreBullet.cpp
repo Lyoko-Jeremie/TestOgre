@@ -154,9 +154,7 @@ namespace Ogre::Bullet {
                                 CollisionListener *listener,
                                 int group, int mask) {
         auto node = ent->getParentSceneNode();
-        OgreAssert(node, "entity must be attached");
-//            RigidBodyState *state = new RigidBodyState(node);
-        // TODO
+        OgreAssert(node, "entity must be attached to a SceneNode");
         auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(
                 node
         );
@@ -169,22 +167,22 @@ namespace Ogre::Bullet {
 
         boost::shared_ptr<btCollisionShape> cs = nullptr;
         switch (ct) {
-            case CT_BOX:
+            case ColliderType::CT_BOX:
                 cs = createBoxCollider(ent);
                 break;
-            case CT_SPHERE:
+            case ColliderType::CT_SPHERE:
                 cs = createSphereCollider(ent);
                 break;
-            case CT_CYLINDER:
+            case ColliderType::CT_CYLINDER:
                 cs = createCylinderCollider(ent);
                 break;
-            case CT_CAPSULE:
+            case ColliderType::CT_CAPSULE:
                 cs = createCapsuleCollider(ent);
                 break;
-            case CT_TRIMESH:
+            case ColliderType::CT_TRIMESH:
                 cs = VertexIndexToShape(ent).createTrimesh(memoryContainerManager_);
                 break;
-            case CT_HULL:
+            case ColliderType::CT_HULL:
                 cs = VertexIndexToShape(ent).createConvex(memoryContainerManager_);
                 break;
         }
@@ -198,7 +196,6 @@ namespace Ogre::Bullet {
 
         memoryContainerManager_->makeShape(cs);
 
-//            auto rb = new btRigidBody(mass, state, cs, inertia);
         auto rb = memoryContainerManager_->makeBody(
                 memoryContainerManager_->makeRigidBodyPtr(
                         mass,
