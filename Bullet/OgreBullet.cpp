@@ -126,7 +126,7 @@ namespace Ogre::Bullet {
 
         memoryContainerManager_->makeShape(cs);
 
-        auto rb = memoryContainerManager_->makeBody(
+        auto rigidBody = memoryContainerManager_->makeBody(
                 memoryContainerManager_->makeRigidBodyPtr(
                         mass,
                         dynamic_cast<btMotionState *>(state.get()),
@@ -135,14 +135,26 @@ namespace Ogre::Bullet {
                 ),
                 state
         );
-        mBtWorld->addRigidBody(rb->ptrRigidBody.get(), group, mask);
-        rb->userPtr = bullet2OgreTracer;
+        mBtWorld->addRigidBody(rigidBody->ptrRigidBody.get(), group, mask);
+        rigidBody->userPtr = bullet2OgreTracer;
 
-        return rb;
+        if (bullet2OgreTracer && !bullet2OgreTracer->sceneNodeName.empty()) {
+            rigidBody->name = bullet2OgreTracer->sceneNodeName;
+        } else if (!node->getName().empty()) {
+            rigidBody->name = !node->getName().empty();
+        } else if (ent->getMesh() && !ent->getMesh()->getName().empty()) {
+            rigidBody->name = !ent->getMesh()->getName().empty();
+        } else {
+            // empty
+            //      rigidBody->name;
+            //      rigidBody->uuid;
+        }
+
+        return rigidBody;
     }
 
     void DynamicsWorld::rayTest(const Ray &ray,
-                                const boost::shared_ptr<btCollisionWorld::RayResultCallback>& callback,
+                                const boost::shared_ptr<btCollisionWorld::RayResultCallback> &callback,
                                 float maxDist) {
         btVector3 from = convert(ray.getOrigin());
         btVector3 to = convert(ray.getPoint(maxDist));
