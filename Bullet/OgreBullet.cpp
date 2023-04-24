@@ -87,7 +87,9 @@ namespace Ogre::Bullet {
         auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(
                 node
         );
-        OgreAssert(bullet2OgreTracer->entity == ent, "entity must same");
+        if (bullet2OgreTracer) {
+            OgreAssert(bullet2OgreTracer->entity == ent, "entity must same");
+        }
 
         if (ent->hasSkeleton()) {
             ent->addSoftwareAnimationRequest(false);

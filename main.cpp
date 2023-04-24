@@ -975,6 +975,12 @@ int main() {
         ninjaEntity->setCastShadows(true);
 
         scnMgr->getRootSceneNode()->createChildSceneNode()->attachObject(ninjaEntity);
+
+        dynamicsWorld->addRigidBody(
+                0,
+                ninjaEntity,
+                Ogre::Bullet::ColliderType::CT_BOX
+        );
     }
 
     Ogre::Plane plane(Ogre::Vector3::UNIT_Y,
@@ -1185,6 +1191,7 @@ int main() {
     while (!ctx->getRoot()->endRenderingQueued()) {
         dynamicsWorld->stepSimulation(1 / 60.f);
         ctx->getRoot()->renderOneFrame();
+        dynamicsWorld->updateDebugDrawWorld();
 //        if (ctx->getRenderWindow()->isActive() || ctx->getRenderWindow()->isVisible()) {
 //            if (!ctx->getRoot()->renderOneFrame()) {
 //                break;

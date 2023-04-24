@@ -335,7 +335,7 @@ namespace Ogre {
             addRigidBody(float mass,
                          Entity *ent,
                          ColliderType ct,
-                         const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer,
+                         const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer = nullptr,
                          int group = 1, int mask = -1);
 
             const decltype(mBtWorld) &getBtWorld() const { return mBtWorld; }
