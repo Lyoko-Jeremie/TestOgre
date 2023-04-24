@@ -111,7 +111,7 @@ public:
     }
 
     // Our state
-    bool show_demo_window = true;
+    bool show_demo_window = false;
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -485,24 +485,47 @@ void createBoxMesh() {
     msh->load();
 }
 
-void createBoxMesh2(Ogre::SceneManager *scnMgr) {
+Ogre::MeshPtr createMeshObject(
+        Ogre::SceneManager *scnMgr,
+        const generator::AnyMesh &mesh,
+        const std::string &meshName
+) {
     // https://wiki.ogre3d.org/MadMarx+Tutorial+4
 
-    gml::dvec3 sizeBox{100., 100., 100.};
-    gml::ivec3 segmentBox{1, 1, 1};
-//    auto boxMesh = generator::BoxMesh{sizeBox, segmentBox};
-//    auto boxMesh = generator::SphereMesh{100.0};
-    auto boxMesh = generator::SphereMesh{
-            100.0,
-            6,
-            6
-    };
+//    gml::dvec3 sizeBox{100., 100., 100.};
+//    gml::ivec3 segmentBox{1, 1, 1};
+////    auto boxMesh = generator::BoxMesh{sizeBox, segmentBox};
+////    auto boxMesh = generator::SphereMesh{100.0};
+//    auto boxMesh = generator::SphereMesh{
+//            100.0,
+//            6,
+//            6
+//    };
 
-    auto manualObject = scnMgr->createManualObject("ColourBoxMeshTest2C");
+    {
+//        if (scnMgr->hasManualObject(meshName)) {
+//            auto o = scnMgr->getManualObject(meshName);
+//            if (o) {
+//                std::cout << "o exist : " << meshName << std::endl;
+//            }
+//            auto m = Ogre::MeshManager::getSingleton().getByName(meshName);
+//            if (m) {
+//                std::cout << "m exist : " << meshName << std::endl;
+//                return m;
+//            }
+//        }
+        auto m = Ogre::MeshManager::getSingleton().getByName(meshName);
+        if (m) {
+            std::cout << "m exist : " << meshName << std::endl;
+            return m;
+        }
+    }
+
+    auto manualObject = scnMgr->createManualObject();
     manualObject->setDynamic(false);
 
 
-    auto vert = boxMesh.vertices();
+    auto vert = mesh.vertices();
     const size_t nVertices = generator::count(vert);
     std::cout << "vertices:" << nVertices << std::endl;
 
@@ -523,7 +546,7 @@ void createBoxMesh2(Ogre::SceneManager *scnMgr) {
     std::cout << std::endl;
 
 
-    auto tr = boxMesh.triangles();
+    auto tr = mesh.triangles();
     const size_t ibufCount = generator::count(tr);
     std::cout << "faces:" << ibufCount << std::endl;
     for (const auto &vertex: tr) {
@@ -535,11 +558,12 @@ void createBoxMesh2(Ogre::SceneManager *scnMgr) {
 
     manualObject->end();
 
-    auto msh = manualObject->convertToMesh("ColourBoxMeshTest2");
+    auto msh = manualObject->convertToMesh(meshName);
     std::cout << "getBounds:" << msh->getBounds() << std::endl;
     std::cout << "getBoneBoundingRadius:" << msh->getBoneBoundingRadius() << std::endl;
     std::cout << "getBoundingSphereRadius:" << msh->getBoundingSphereRadius() << std::endl;
 
+    return msh;
 };
 
 struct TtfMeshFactory : public std::enable_shared_from_this<TtfMeshFactory> {
@@ -1236,6 +1260,35 @@ int main() {
 //        thisSceneNode->attachObject(thisEntity);
 //    }
 
+    {
+        Ogre::SceneNode *mSceneNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+
+
+        auto mesh = createMeshObject(scnMgr,
+                                     generator::SphereMesh{5.0, 6, 6},
+                                     "TestSphereMesh");
+
+        Ogre::Entity *mEntity = scnMgr->createEntity(mesh);
+        Ogre::MaterialPtr material = Ogre::MaterialManager::getSingleton().create(
+                "ColourTest", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+        material->getTechnique(0)->getPass(0)->setVertexColourTracking(Ogre::TVC_AMBIENT);
+
+        mEntity->setMaterial(material);
+        mSceneNode->attachObject(mEntity);
+        mSceneNode->setPosition(Ogre::Vector3(0, 200, 120));
+
+//        Ogre::Real radius = mEntity->getBoundingRadius();
+//        mSceneNode->scale(50 / radius, 50 / radius, 50 / radius);
+//        mSceneNode->setScale(Ogre::Vector3(1.5, 1.5, 1.5)); // Radius, in theory.
+
+
+        auto b = dynamicsWorld->addRigidBody(
+                1,
+                mEntity,
+                Ogre::Bullet::ColliderType::CT_SPHERE
+        );
+    }
+
 
     auto imGuiOverlay = std::make_unique<Ogre::ImGuiOverlay>();
 
@@ -1289,6 +1342,18 @@ int main() {
     // must destroy before MemoryPool::gpMemoryPoolManager
     bulletMemoryContainerManager.reset();
 
+    {
+        std::cout << "gpMemoryPoolManager leak items "
+                  << MemoryPool::gpMemoryPoolManager->_getMemoryPoolRef().size()
+                  << std::endl;
+        size_t s = 0;
+        for (const auto &n: MemoryPool::gpMemoryPoolManager->_getMemoryPoolRef()) {
+            s += n.second.size;
+        }
+        std::cout << "gpMemoryPoolManager leak size "
+                  << s
+                  << std::endl;
+    }
     // after destroy gpMemoryPoolManager , never call Bullet again
     MemoryPool::gpMemoryPoolManager.reset();
 
