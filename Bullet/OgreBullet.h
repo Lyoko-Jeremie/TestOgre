@@ -277,13 +277,38 @@ namespace Ogre {
                         BulletMemoryContainer::CollisionState::State collisionType,
                         int idA,
                         int idB,
-                        const boost::shared_ptr<BulletMemoryContainer::RigidObject>& self,
-                        const boost::shared_ptr<BulletMemoryContainer::RigidObject>& other,
+                        const boost::shared_ptr<BulletMemoryContainer::RigidObject> &self,
+                        const boost::shared_ptr<BulletMemoryContainer::RigidObject> &other,
                         const boost::shared_ptr<BulletMemoryContainer::CollisionState> &collisionEvent,
                         const boost::shared_ptr<DynamicsWorld> &dynamicsWorld
                 ) {
                     // TODO proxy the collision event to other func to subtype
+                    if (collisionTriggerListener) {
+                        collisionTriggerListener(
+                                collisionType,
+                                idA,
+                                idB,
+                                self,
+                                other,
+                                collisionEvent,
+                                dynamicsWorld,
+                                shared_from_this()
+                        );
+                    }
                 }
+
+                // subclass can set this to listen collision event
+                std::function<void(
+                        BulletMemoryContainer::CollisionState::State collisionType,
+                        int idA,
+                        int idB,
+                        const boost::shared_ptr<BulletMemoryContainer::RigidObject> &self,
+                        const boost::shared_ptr<BulletMemoryContainer::RigidObject> &other,
+                        const boost::shared_ptr<BulletMemoryContainer::CollisionState> &collisionEvent,
+                        const boost::shared_ptr<DynamicsWorld> &dynamicsWorld,
+                        const boost::shared_ptr<Bullet2OgreTracer> &bullet2OgreTracer
+                )> collisionTriggerListener;
+
             };
 
         public:
