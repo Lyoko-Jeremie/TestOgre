@@ -78,61 +78,31 @@ namespace Ogre::Bullet {
 
     boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
     DynamicsWorld::addRigidBody(float mass,
-                                Entity *ent,
-                                ColliderType ct,
+                                Entity *entity,
+                                const boost::shared_ptr<btCollisionShape> &collisionShape,
                                 const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer,
                                 int group, int mask) {
-        auto node = ent->getParentSceneNode();
+        auto node = entity->getParentSceneNode();
         OgreAssert(node, "entity must be attached to a SceneNode");
         auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(
                 node
         );
         if (bullet2OgreTracer) {
-            OgreAssert(bullet2OgreTracer->entity == ent, "entity must same");
+            OgreAssert(bullet2OgreTracer->entity == entity, "entity must same");
         }
 
-        if (ent->hasSkeleton()) {
-            ent->addSoftwareAnimationRequest(false);
-            ent->_updateAnimation();
-            ent->setUpdateBoundingBoxFromSkeleton(true);
-        }
-
-        boost::shared_ptr<btCollisionShape> cs = nullptr;
-        switch (ct) {
-            case ColliderType::CT_BOX:
-                cs = createBoxCollider(ent);
-                break;
-            case ColliderType::CT_SPHERE:
-                cs = createSphereCollider(ent);
-                break;
-            case ColliderType::CT_CYLINDER:
-                cs = createCylinderCollider(ent);
-                break;
-            case ColliderType::CT_CAPSULE:
-                cs = createCapsuleCollider(ent);
-                break;
-            case ColliderType::CT_TRIMESH:
-                cs = VertexIndexToShape(ent).createTrimesh(memoryContainerManager_);
-                break;
-            case ColliderType::CT_HULL:
-                cs = VertexIndexToShape(ent).createConvex(memoryContainerManager_);
-                break;
-        }
-
-        if (ent->hasSkeleton())
-            ent->removeSoftwareAnimationRequest(false);
 
         btVector3 inertia(0, 0, 0);
         if (mass != 0) // mass = 0 -> static
-            cs->calculateLocalInertia(mass, inertia);
+            collisionShape->calculateLocalInertia(mass, inertia);
 
-        memoryContainerManager_->makeShape(cs);
+        memoryContainerManager_->makeShape(collisionShape);
 
         auto rigidBody = memoryContainerManager_->makeBody(
                 memoryContainerManager_->makeRigidBodyPtr(
                         mass,
                         dynamic_cast<btMotionState *>(state.get()),
-                        dynamic_cast<btCollisionShape *>(cs.get()),
+                        dynamic_cast<btCollisionShape *>(collisionShape.get()),
                         inertia
                 ),
                 state
@@ -144,8 +114,8 @@ namespace Ogre::Bullet {
             rigidBody->name = bullet2OgreTracer->sceneNodeName;
         } else if (!node->getName().empty()) {
             rigidBody->name = !node->getName().empty();
-        } else if (ent->getMesh() && !ent->getMesh()->getName().empty()) {
-            rigidBody->name = !ent->getMesh()->getName().empty();
+        } else if (entity->getMesh() && !entity->getMesh()->getName().empty()) {
+            rigidBody->name = !entity->getMesh()->getName().empty();
         } else {
             // empty
             //      rigidBody->name;
@@ -153,6 +123,63 @@ namespace Ogre::Bullet {
         }
 
         return rigidBody;
+
+    }
+
+    boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
+    DynamicsWorld::addRigidBody(float mass,
+                                Entity *entity,
+                                ColliderType colliderType,
+                                const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer,
+                                int group, int mask) {
+        auto node = entity->getParentSceneNode();
+        OgreAssert(node, "entity must be attached to a SceneNode");
+        auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(
+                node
+        );
+        if (bullet2OgreTracer) {
+            OgreAssert(bullet2OgreTracer->entity == entity, "entity must same");
+        }
+
+        if (entity->hasSkeleton()) {
+            entity->addSoftwareAnimationRequest(false);
+            entity->_updateAnimation();
+            entity->setUpdateBoundingBoxFromSkeleton(true);
+        }
+
+        boost::shared_ptr<btCollisionShape> collisionShape = nullptr;
+        switch (colliderType) {
+            case ColliderType::CT_BOX:
+                collisionShape = createBoxCollider(entity);
+                break;
+            case ColliderType::CT_SPHERE:
+                collisionShape = createSphereCollider(entity);
+                break;
+            case ColliderType::CT_CYLINDER:
+                collisionShape = createCylinderCollider(entity);
+                break;
+            case ColliderType::CT_CAPSULE:
+                collisionShape = createCapsuleCollider(entity);
+                break;
+            case ColliderType::CT_TRIMESH:
+                collisionShape = VertexIndexToShape(entity).createTrimesh(memoryContainerManager_);
+                break;
+            case ColliderType::CT_HULL:
+                collisionShape = VertexIndexToShape(entity).createConvex(memoryContainerManager_);
+                break;
+        }
+
+        if (entity->hasSkeleton())
+            entity->removeSoftwareAnimationRequest(false);
+
+        return addRigidBody(
+                mass,
+                entity,
+                collisionShape,
+                bullet2OgreTracer,
+                group,
+                mask
+        );
     }
 
     void DynamicsWorld::rayTest(const Ray &ray,

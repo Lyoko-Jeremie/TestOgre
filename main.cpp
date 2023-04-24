@@ -963,12 +963,18 @@ int main() {
     vp->setBackgroundColour(Ogre::ColourValue(1, 0, 1));
 
 
-//    {
-//        // finally something to render
-//        Ogre::Entity *ent = scnMgr->createEntity("Sinbad.mesh");
-//        Ogre::SceneNode *node = scnMgr->getRootSceneNode()->createChildSceneNode();
-//        node->attachObject(ent);
-//    }
+    {
+        // finally something to render
+        Ogre::Entity *ent = scnMgr->createEntity("Sinbad.mesh");
+        Ogre::SceneNode *node = scnMgr->getRootSceneNode()->createChildSceneNode();
+        node->attachObject(ent);
+
+        auto b = dynamicsWorld->addRigidBody(
+                0,
+                ent,
+                Ogre::Bullet::ColliderType::CT_HULL
+        );
+    }
     {
         // https://ogrecave.github.io/ogre/api/latest/tut__lights_cameras_shadows.html
         Ogre::Entity *ninjaEntity = scnMgr->createEntity("ninja.mesh");
@@ -976,11 +982,12 @@ int main() {
 
         scnMgr->getRootSceneNode()->createChildSceneNode()->attachObject(ninjaEntity);
 
-        dynamicsWorld->addRigidBody(
+        auto b = dynamicsWorld->addRigidBody(
                 0,
                 ninjaEntity,
-                Ogre::Bullet::ColliderType::CT_BOX
+                Ogre::Bullet::ColliderType::CT_TRIMESH
         );
+//       b->ptrRigidBody->;
     }
 
     Ogre::Plane plane(Ogre::Vector3::UNIT_Y,

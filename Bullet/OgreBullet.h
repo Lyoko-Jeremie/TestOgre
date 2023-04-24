@@ -333,8 +333,15 @@ namespace Ogre {
 
             boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
             addRigidBody(float mass,
-                         Entity *ent,
-                         ColliderType ct,
+                         Entity *entity,
+                         ColliderType colliderType,
+                         const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer = nullptr,
+                         int group = 1, int mask = -1);
+
+            boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
+            addRigidBody(float mass,
+                         Entity *entity,
+                         const boost::shared_ptr<btCollisionShape> &collisionShape,
                          const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer = nullptr,
                          int group = 1, int mask = -1);
 
