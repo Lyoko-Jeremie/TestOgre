@@ -59,21 +59,6 @@ namespace Ogre {
             }
         };
 
-        struct CollisionListener {
-            virtual ~CollisionListener() = default;
-
-            virtual void contact(const MovableObject *other, const btManifoldPoint &manifoldPoint) = 0;
-        };
-
-        struct RayResultCallback {
-            virtual ~RayResultCallback() = default;
-
-            virtual void addSingleResult(const MovableObject *other, float distance) = 0;
-        };
-
-//        static void onTick(btDynamicsWorld *world, btScalar timeStep);
-
-
         class DebugDrawer : public btIDebugDraw {
             SceneNode *mNode;
 
@@ -342,7 +327,6 @@ namespace Ogre {
 
 
                 mBtWorld->setGravity(convert(gravity));
-//                mBtWorld->setInternalTickCallback(onTick);
             }
 
             ~DynamicsWorld() = default;
@@ -352,12 +336,13 @@ namespace Ogre {
                          Entity *ent,
                          ColliderType ct,
                          const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer,
-                         CollisionListener *listener = nullptr,
                          int group = 1, int mask = -1);
 
             const decltype(mBtWorld) &getBtWorld() const { return mBtWorld; }
 
-            void rayTest(const Ray &ray, RayResultCallback *callback, float maxDist = 1000);
+            void rayTest(const Ray &ray,
+                         const boost::shared_ptr<btCollisionWorld::RayResultCallback>& callback,
+                         float maxDist);
 
 
             /// create sphere collider using ogre provided data

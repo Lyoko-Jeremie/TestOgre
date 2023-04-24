@@ -41,15 +41,12 @@ namespace Ogre::Bullet {
         if (height == sz.y) {
             radius = std::max(sz.x, sz.z);
             shape = memoryContainerManager_->makeSharedPtr<btCapsuleShape>(radius, 2 * height - 2 * radius);
-//                shape = new btCapsuleShape(radius, 2 * height - 2 * radius);
         } else if (height == sz.x) {
             radius = std::max(sz.y, sz.z);
             shape = memoryContainerManager_->makeSharedPtr<btCapsuleShapeX>(radius, 2 * height - 2 * radius);
-//                shape = new btCapsuleShapeX(radius, 2 * height - 2 * radius);
         } else {
             radius = std::max(sz.x, sz.y);
             shape = memoryContainerManager_->makeSharedPtr<btCapsuleShapeZ>(radius, 2 * height - 2 * radius);
-//                shape = new btCapsuleShapeZ(radius, 2 * height - 2 * radius);
         }
 
         shape->setLocalScaling(convert(mo->getParentSceneNode()->getScale()));
@@ -68,13 +65,10 @@ namespace Ogre::Bullet {
         // Orient the capsule such that its height is aligned with the largest dimension.
         if (height == sz.y()) {
             shape = memoryContainerManager_->makeSharedPtr<btCylinderShape>(sz);
-//                shape = new btCylinderShape(sz);
         } else if (height == sz.x()) {
             shape = memoryContainerManager_->makeSharedPtr<btCylinderShapeX>(sz);
-//                shape = new btCylinderShapeX(sz);
         } else {
             shape = memoryContainerManager_->makeSharedPtr<btCylinderShapeZ>(sz);
-//                shape = new btCylinderShapeZ(sz);
         }
 
         shape->setLocalScaling(convert(mo->getParentSceneNode()->getScale()));
@@ -82,77 +76,11 @@ namespace Ogre::Bullet {
         return shape;
     }
 
-    struct EntityCollisionListener {
-        const MovableObject *entity;
-        CollisionListener *listener;
-    };
-
-//    // TODO
-//    static void onTick2(btDynamicsWorld *world, btScalar timeStep) {
-//        int numManifolds = world->getDispatcher()->getNumManifolds();
-//        auto manifolds = world->getDispatcher()->getInternalManifoldPointer();
-//        for (int i = 0; i < numManifolds; i++) {
-//            btPersistentManifold *manifold = manifolds[i];
-//
-//            for (int j = 0; j < manifold->getNumContacts(); j++) {
-//                const btManifoldPoint &mp = manifold->getContactPoint(i);
-//                // TODO
-//                auto body0 = static_cast<EntityCollisionListener *>(manifold->getBody0()->getUserPointer());
-//                auto body1 = static_cast<EntityCollisionListener *>(manifold->getBody1()->getUserPointer());
-//                if (body0->listener)
-//                    body0->listener->contact(body1->entity, mp);
-//                if (body1->listener)
-//                    body1->listener->contact(body0->entity, mp);
-//            }
-//        }
-//    }
-
-
-
-    /// wrapper with automatic memory management
-    // TODO
-    class RigidBodyGuard {
-        btRigidBody *mBtBody;
-        btDynamicsWorld *mBtWorld;
-
-    public:
-        RigidBodyGuard(btRigidBody *btBody, btDynamicsWorld *btWorld) : mBtBody(btBody), mBtWorld(btWorld) {}
-
-        ~RigidBodyGuard() {
-            mBtWorld->removeRigidBody(mBtBody);
-            delete (EntityCollisionListener *) mBtBody->getUserPointer();
-            delete mBtBody->getMotionState();
-            delete mBtBody->getCollisionShape();
-            delete mBtBody;
-        }
-
-        [[nodiscard]] btRigidBody *getBtBody() const { return mBtBody; }
-    };
-//        class RigidBody {
-//            btRigidBody *mBtBody;
-//            btDynamicsWorld *mBtWorld;
-//
-//        public:
-//            RigidBody(btRigidBody *btBody, btDynamicsWorld *btWorld) : mBtBody(btBody), mBtWorld(btWorld) {}
-//
-//            ~RigidBody() {
-//                mBtWorld->removeRigidBody(mBtBody);
-//                delete (EntityCollisionListener *) mBtBody->getUserPointer();
-//                delete mBtBody->getMotionState();
-//                delete mBtBody->getCollisionShape();
-//                delete mBtBody;
-//            }
-//
-//            btRigidBody *getBtBody() const { return mBtBody; }
-//        };
-
-
     boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
     DynamicsWorld::addRigidBody(float mass,
                                 Entity *ent,
                                 ColliderType ct,
                                 const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer,
-                                CollisionListener *listener,
                                 int group, int mask) {
         auto node = ent->getParentSceneNode();
         OgreAssert(node, "entity must be attached to a SceneNode");
@@ -160,10 +88,6 @@ namespace Ogre::Bullet {
                 node
         );
         OgreAssert(bullet2OgreTracer->entity == ent, "entity must same");
-
-//        auto bullet2OgreTracer = memoryContainerManager_->makeSharedPtr<Bullet2OgreTracer>(
-//                ctx, root, scnMgr, ent
-//        );
 
         if (ent->hasSkeleton()) {
             ent->addSoftwareAnimationRequest(false);
@@ -212,37 +136,17 @@ namespace Ogre::Bullet {
                 state
         );
         mBtWorld->addRigidBody(rb->ptrRigidBody.get(), group, mask);
-        rb->ptrRigidBody->setUserPointer(new EntityCollisionListener{ent, listener});
         rb->userPtr = bullet2OgreTracer;
-
-//            // transfer ownership to node
-//            auto bodyWrapper = memoryContainerManager_->makeSharedPtr<RigidBody>(rb, mBtWorld);
-//            node->getUserObjectBindings().setUserAny("BtRigidBody", bodyWrapper);
 
         return rb;
     }
 
-    // TODO
-    struct RayResultCallbackWrapper : public btCollisionWorld::RayResultCallback {
-        Bullet::RayResultCallback *mCallback;
-        float mMaxDistance;
-
-        RayResultCallbackWrapper(Bullet::RayResultCallback *callback, float maxDist)
-                : mCallback(callback), mMaxDistance(maxDist) {
-        }
-
-        btScalar addSingleResult(btCollisionWorld::LocalRayResult &rayResult, bool normalInWorldSpace) override {
-            auto body0 = static_cast<const EntityCollisionListener *>(rayResult.m_collisionObject->getUserPointer());
-            mCallback->addSingleResult(body0->entity, rayResult.m_hitFraction * mMaxDistance);
-            return rayResult.m_hitFraction;
-        }
-    };
-
-    void DynamicsWorld::rayTest(const Ray &ray, RayResultCallback *callback, float maxDist) {
-        RayResultCallbackWrapper wrapper(callback, maxDist);
+    void DynamicsWorld::rayTest(const Ray &ray,
+                                const boost::shared_ptr<btCollisionWorld::RayResultCallback>& callback,
+                                float maxDist) {
         btVector3 from = convert(ray.getOrigin());
         btVector3 to = convert(ray.getPoint(maxDist));
-        mBtWorld->rayTest(from, to, wrapper);
+        mBtWorld->rayTest(from, to, *callback);
     }
 
     void DynamicsWorld::onTick() {
