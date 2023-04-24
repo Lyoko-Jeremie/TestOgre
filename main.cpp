@@ -858,14 +858,14 @@ int main() {
 
     std::string title{"OgreTutorialApp"};
 
-    OgreBites::ApplicationContext ctx{title};
-    ctx.getFSLayer().setHomePath({"."});
-    ctx.getFSLayer().setConfigPaths({"ogre.cfg"});
-    ctx.initApp();
+    boost::shared_ptr<OgreBites::ApplicationContext> ctx = boost::make_shared<OgreBites::ApplicationContext>(title);
+    ctx->getFSLayer().setHomePath({"."});
+    ctx->getFSLayer().setConfigPaths({"ogre.cfg"});
+    ctx->initApp();
 
 
     // get a pointer to the already created root
-    Ogre::Root *root = ctx.getRoot();
+    Ogre::Root *root = ctx->getRoot();
     Ogre::SceneManager *scnMgr = root->createSceneManager();
 
     // register our scene with the RTSS
@@ -950,7 +950,7 @@ int main() {
 //    cameraMan->setStyle(OgreBites::CS_MANUAL);
 
     // and tell it to render into the main window
-    auto vp = ctx.getRenderWindow()->addViewport(cam);
+    auto vp = ctx->getRenderWindow()->addViewport(cam);
     vp->setBackgroundColour(Ogre::ColourValue(1, 0, 1));
 
 
@@ -1154,35 +1154,35 @@ int main() {
     scnMgr->addRenderQueueListener(&Ogre::OverlaySystem::getSingleton());
 
     auto imGuiInputListener = std::make_unique<OgreBites::ImGuiInputListener>();
-    ctx.addInputListener(&*imGuiInputListener);
+    ctx->addInputListener(&*imGuiInputListener);
 
 
     ImGuiDrawHandler imGuiDrawHandler;
-    ctx.getRoot()->addFrameListener(&imGuiDrawHandler);
+    ctx->getRoot()->addFrameListener(&imGuiDrawHandler);
 
 //    BulletHandler bulletHandler{scnMgr};
-//    ctx.getRoot()->addFrameListener(&bulletHandler);
+//    ctx->getRoot()->addFrameListener(&bulletHandler);
 
     // register for input events
     KeyHandler keyHandler;
-    ctx.addInputListener(&keyHandler);
-    ctx.addInputListener(&*cameraMan);
+    ctx->addInputListener(&keyHandler);
+    ctx->addInputListener(&*cameraMan);
 
-//    ctx.getRoot()->startRendering();
+//    ctx->getRoot()->startRendering();
 
     Ogre::Root::getSingleton().getRenderSystem()->_initRenderTargets();
-    ctx.getRoot()->clearEventTimes();
+    ctx->getRoot()->clearEventTimes();
 
-    while (!ctx.getRoot()->endRenderingQueued()) {
-        ctx.getRoot()->renderOneFrame();
-//        if (ctx.getRenderWindow()->isActive() || ctx.getRenderWindow()->isVisible()) {
-//            if (!ctx.getRoot()->renderOneFrame()) {
+    while (!ctx->getRoot()->endRenderingQueued()) {
+        ctx->getRoot()->renderOneFrame();
+//        if (ctx->getRenderWindow()->isActive() || ctx->getRenderWindow()->isVisible()) {
+//            if (!ctx->getRoot()->renderOneFrame()) {
 //                break;
 //            }
 //        }
     }
 
-    ctx.closeApp();
+    ctx->closeApp();
 
 
     return 0;
