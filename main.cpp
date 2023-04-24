@@ -833,18 +833,19 @@ std::shared_ptr<TtfMeshData> createTtfMesh(Ogre::SceneManager *scnMgr,
 int main() {
     std::cout << "Hello, World!" << std::endl;
 
-//    boost::simple_segregated_storage memory_pool{};
-//
-//    btAlignedAllocSetCustomAligned(
-//            [&memory_pool](size_t size, int alignment) {
-////                return memory_pool.malloc_n(size, size);
-//                return memory_pool.malloc(size, size);
-//            },
-//            [&memory_pool](void *memblock) {
-//                return memory_pool.free(memblock);
-//            }
-//    );
 
+    MemoryPool::setup();
+
+    auto bulletMemoryContainerManager = BulletMemoryContainer::BulletMemoryContainerManager::create(
+            MemoryPool::gpMemoryPoolManager
+    );
+
+    auto dynamicsWorld = Ogre::Bullet::DynamicsWorld::create(
+            bulletMemoryContainerManager, {0, -10, 0}
+    );
+
+
+    dynamicsWorld->getBtWorld();
 
 
     auto ttfMeshFactory = std::make_shared<TtfMeshFactory>();

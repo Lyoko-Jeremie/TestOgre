@@ -249,15 +249,28 @@ namespace BulletMemoryContainer {
         // the weak_ptr will keep "control block" alive, so use it carefully
 //        std::deque<boost::weak_ptr<UserPtrBase>> anyManagedPtrTracer;
 
+
+
+    public:
+        explicit BulletMemoryContainerManager(
+                boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager
+        ) : pMemoryPoolManager_(std::move(pMemoryPoolManager)) {}
+
+        static boost::shared_ptr<BulletMemoryContainerManager>
+        create(
+                boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager
+        ) {
+            return boost::allocate_shared<BulletMemoryContainerManager>(
+                    MemoryPool::MemoryCustomAllocator<BulletMemoryContainerManager>(pMemoryPoolManager),
+                    pMemoryPoolManager
+            );
+        }
+
     public:
 
         auto &getCollisionStateContainer() {
             return ccs;
         }
-
-        explicit BulletMemoryContainerManager(
-                boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager
-        ) : pMemoryPoolManager_(std::move(pMemoryPoolManager)) {}
 
         auto getMemoryPoolManager() {
             return pMemoryPoolManager_;

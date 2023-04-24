@@ -136,6 +136,16 @@ namespace Ogre {
 
         public:
 
+            static boost::shared_ptr<DynamicsWorld>
+            create(
+                    boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager,
+                    const Vector3 &gravity
+            ) {
+                return memoryContainerManager->makeSharedPtr<DynamicsWorld>(
+                        memoryContainerManager, gravity
+                );
+            }
+
             struct Bullet2OgreTracer
                     : public BulletMemoryContainer::UserPtrBase,
                       public boost::enable_shared_from_this<Bullet2OgreTracer> {
