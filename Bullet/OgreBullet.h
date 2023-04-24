@@ -277,7 +277,7 @@ namespace Ogre {
                         const boost::shared_ptr<BulletMemoryContainer::CollisionState> &collisionEvent,
                         const boost::shared_ptr<DynamicsWorld> &dynamicsWorld
                 ) {
-                    // TODO proxy the collision event to other func to subtype
+                    // proxy the collision event to other func to subtype
                     if (collisionTriggerListener) {
                         collisionTriggerListener(
                                 collisionType,
