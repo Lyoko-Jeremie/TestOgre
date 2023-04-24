@@ -21,13 +21,8 @@
 
 //#include "OgreUnifiedHighLevelGpuProgram.h"
 #include "Bullet/OgreBullet.h"
-//#include "LinearMath/btVector3.h"
-//#include "BulletCollision/NarrowPhaseCollision/btManifoldPoint.h"
-//#include "BulletCollision/CollisionDispatch/btCollisionObject.h"
+#include "Bullet/BodyHelper.h"
 
-
-#include <boost/pool/simple_segregated_storage.hpp>
-#include <boost/pool/pool_alloc.hpp>
 
 #include <boost/log/trivial.hpp>
 #include <boost/assert.hpp>
@@ -846,6 +841,10 @@ int main() {
 
 
     dynamicsWorld->getBtWorld();
+
+    Ogre::Bullet::BodyHelper::createInfiniteGround(
+            dynamicsWorld
+    );
 
 
     auto ttfMeshFactory = std::make_shared<TtfMeshFactory>();
