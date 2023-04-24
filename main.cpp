@@ -963,18 +963,18 @@ int main() {
     vp->setBackgroundColour(Ogre::ColourValue(1, 0, 1));
 
 
-    {
-        // finally something to render
-        Ogre::Entity *ent = scnMgr->createEntity("Sinbad.mesh");
-        Ogre::SceneNode *node = scnMgr->getRootSceneNode()->createChildSceneNode();
-        node->attachObject(ent);
-
-        auto b = dynamicsWorld->addRigidBody(
-                0,
-                ent,
-                Ogre::Bullet::ColliderType::CT_HULL
-        );
-    }
+//    {
+//        // finally something to render
+//        Ogre::Entity *ent = scnMgr->createEntity("Sinbad.mesh");
+//        Ogre::SceneNode *node = scnMgr->getRootSceneNode()->createChildSceneNode();
+//        node->attachObject(ent);
+//
+//        auto b = dynamicsWorld->addRigidBody(
+//                0,
+//                ent,
+//                Ogre::Bullet::ColliderType::CT_HULL
+//        );
+//    }
     {
         // https://ogrecave.github.io/ogre/api/latest/tut__lights_cameras_shadows.html
         Ogre::Entity *ninjaEntity = scnMgr->createEntity("ninja.mesh");
@@ -987,7 +987,6 @@ int main() {
                 ninjaEntity,
                 Ogre::Bullet::ColliderType::CT_TRIMESH
         );
-//       b->ptrRigidBody->;
     }
 
     Ogre::Plane plane(Ogre::Vector3::UNIT_Y,
@@ -1080,6 +1079,7 @@ int main() {
         for (auto &s: std::wstring{L"世界人民大团结万岁"}) {
             ttfMeshList2.push_back(createTtfMesh(scnMgr, ttfMeshFactory, s, 0.1));
         }
+        std::vector<Ogre::Entity *> entityList;
 
         Ogre::MaterialPtr material = Ogre::MaterialManager::getSingleton().create(
                 "ColourTtfMeshTest2", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
@@ -1106,6 +1106,14 @@ int main() {
             auto size = info->info3D->getSize().toOgreVec3();
             sizeTotal1 = Ogre::Vector3{sizeTotal1.x + size.x, std::max(sizeTotal1.y, size.y), sizeTotal1.z};
             thisNode->attachObject(thisEntity);
+
+            auto b = dynamicsWorld->addRigidBody(
+                    0,
+                    thisEntity,
+                    Ogre::Bullet::ColliderType::CT_TRIMESH
+            );
+
+            entityList.push_back(thisEntity);
         }
         Ogre::Vector3 sizeTotal2{0, 0, 0};
         basePos = {0, -(sizeTotal1.y * 1.5f), 0};
@@ -1124,6 +1132,14 @@ int main() {
             auto size = info->info3D->getSize().toOgreVec3();
             sizeTotal2 = Ogre::Vector3{sizeTotal2.x + size.x, std::max(sizeTotal2.y, size.y), sizeTotal2.z};
             thisNode->attachObject(thisEntity);
+
+            auto b = dynamicsWorld->addRigidBody(
+                    0,
+                    thisEntity,
+                    Ogre::Bullet::ColliderType::CT_TRIMESH
+            );
+
+            entityList.push_back(thisEntity);
         }
         Ogre::Vector3 sizeTotal{
                 std::max(sizeTotal1.x, sizeTotal2.x),
@@ -1142,6 +1158,67 @@ int main() {
         thisSceneNode->rotate(Ogre::Vector3{1, 0, 0}, Ogre::Degree(-45.0));
 //        thisSceneNode->showBoundingBox(true);
 
+        const auto &memoryContainerManager_ = dynamicsWorld->getMemoryContainerManager();
+        for (auto &p: entityList) {
+            auto idAny = p->getUserObjectBindings().getUserAny("id_bullet");
+            if (idAny.has_value()) {
+                auto id = any_cast<int>(&idAny);
+                if (id) {
+                    auto b = memoryContainerManager_->getBody(*id);
+                    if (b) {
+//                        if (b->userPtr &&
+//                            b->userPtr->typeName == Ogre::Bullet::DynamicsWorld::Bullet2OgreTracer::TypeNameTag) {
+//                            auto t = dynamic_pointer_cast<Ogre::Bullet::DynamicsWorld::Bullet2OgreTracer>(b->userPtr);
+//                            if (t) {
+//                                t;
+//                            }
+//                        }
+
+                        auto pn = p->getParentNode();
+                        pn->convertLocalToWorldOrientation(pn->getOrientation());
+                        pn->convertLocalToWorldPosition(pn->getPosition());
+                        pn;
+                        pn->getScale();
+
+                        auto trans = btTransform(
+                                Ogre::Bullet::convert(
+                                        pn->convertLocalToWorldOrientation(Ogre::Quaternion::IDENTITY)
+                                ),
+                                Ogre::Bullet::convert(
+                                        pn->convertLocalToWorldPosition(Ogre::Vector3::ZERO)
+                                ));
+//                        auto trans = btTransform(Ogre::Bullet::convert(p->getParentNode()->getOrientation()),
+//                                                 Ogre::Bullet::convert(p->getParentNode()->getPosition()));
+                        b->ptrRigidBody->setWorldTransform(trans);
+                        b->ptrRigidBody->getCollisionShape()->setLocalScaling(
+                                Ogre::Bullet::convert(
+                                        thisSceneNode->getScale()
+                                )
+                        );
+                        b->ptrRigidBody->activate(true);
+
+                        std::cout << "(auto &p: entityList) update : " << p
+                                  << " id :" << *id
+                                  << " name : " << b->name
+                                  << " getOrigin : "
+                                  << "[" << trans.getOrigin().x()
+                                  << "," << trans.getOrigin().y()
+                                  << "," << trans.getOrigin().z() << "]"
+                                  << " getRotation : "
+                                  << "[" << trans.getRotation().x()
+                                  << "," << trans.getRotation().y()
+                                  << "," << trans.getRotation().z() << "]"
+                                  << " getScale : "
+                                  << "[" << pn->getScale().x
+                                  << "," << pn->getScale().y
+                                  << "," << pn->getScale().z << "]"
+                                  << std::endl;
+                    }
+                }
+            } else {
+                std::cout << "(auto &p: entityList) no id_bullet : " << p << std::endl;
+            }
+        }
     }
 
 

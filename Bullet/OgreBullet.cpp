@@ -113,13 +113,20 @@ namespace Ogre::Bullet {
         if (bullet2OgreTracer && !bullet2OgreTracer->sceneNodeName.empty()) {
             rigidBody->name = bullet2OgreTracer->sceneNodeName;
         } else if (!node->getName().empty()) {
-            rigidBody->name = !node->getName().empty();
+            rigidBody->name = node->getName();
         } else if (entity->getMesh() && !entity->getMesh()->getName().empty()) {
-            rigidBody->name = !entity->getMesh()->getName().empty();
+            rigidBody->name = entity->getMesh()->getName();
         } else {
             // empty
             //      rigidBody->name;
             //      rigidBody->uuid;
+        }
+
+        entity->getUserObjectBindings().setUserAny("id_bullet", rigidBody->id);
+        entity->getUserObjectBindings().setUserAny("uuid_bullet", rigidBody->uuid);
+        if (!node->getUserObjectBindings().getUserAny("id_bullet").has_value()) {
+            node->getUserObjectBindings().setUserAny("id_bullet", rigidBody->id);
+            node->getUserObjectBindings().setUserAny("uuid_bullet", rigidBody->uuid);
         }
 
         return rigidBody;
