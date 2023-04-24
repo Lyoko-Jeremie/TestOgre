@@ -16,6 +16,7 @@
 #include <boost/smart_ptr/allocate_unique.hpp>
 
 #include <boost/align/aligned_alloc.hpp>
+#include <utility>
 
 namespace MemoryPool {
 
@@ -24,17 +25,45 @@ namespace MemoryPool {
         using DataType = unsigned char[];
         using DataTypePtr = unsigned char *;
 
+        struct PtrInfoStruct {
+            boost::shared_ptr<DataType> ptr{nullptr};
+            size_t size{0};
+            bool isAligned{false};
+
+            PtrInfoStruct(
+                    boost::shared_ptr<DataType> ptr,
+                    size_t size,
+                    bool isAligned
+            ) : ptr(std::move(ptr)), size(size), isAligned(isAligned) {}
+        };
+
+        using PtrInfo = PtrInfoStruct;
+
+        static PtrInfo createPtrInfo(
+                boost::shared_ptr<DataType> ptr,
+                size_t size,
+                bool isAligned
+        ) {
+            return std::move(PtrInfoStruct{std::move(ptr), size, isAligned});
+        }
+
         // we need the allocated memory pined at a place, so don't use std::vector replace smart ptr
         // when item erase, the memory block will deallocate by boost::shared_ptr
-        std::unordered_map<DataTypePtr, boost::shared_ptr<DataType>> memoryPool;
+        std::unordered_map<DataTypePtr, PtrInfo> memoryPool;
         std::mutex mtx;
 
     public:
 
-        void reset() {
+        void clear() {
             std::lock_guard lg{mtx};
             memoryPool.clear();
         }
+
+        const auto &_getMemoryPoolRef() {
+            return memoryPool;
+        }
+
+    public:
 
         void *allocate(const size_t size) {
             // https://en.cppreference.com/w/cpp/memory/c/malloc
@@ -53,7 +82,7 @@ namespace MemoryPool {
             // https://en.cppreference.com/w/cpp/memory/c/free
             // auto b = boost::shared_ptr<DataType>((unsigned char *) std::malloc(size), std::free);
             if (b) {
-                memoryPool.emplace(std::make_pair(b.get(), b));
+                memoryPool.emplace(std::make_pair(b.get(), createPtrInfo(b, size, false)));
             }
             return b.get();
         }
@@ -68,7 +97,7 @@ namespace MemoryPool {
                     boost::alignment::aligned_free
             );
             if (b) {
-                memoryPool.emplace(std::make_pair(b.get(), b));
+                memoryPool.emplace(std::make_pair(b.get(), createPtrInfo(b, size, true)));
             }
             return b.get();
         }
