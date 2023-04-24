@@ -124,7 +124,7 @@ namespace Ogre {
 
 
         /// simplified wrapper with automatic memory management
-        class DynamicsWorld {
+        class DynamicsWorld : public boost::enable_shared_from_this<DynamicsWorld> {
 
             boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager_;
 
@@ -135,110 +135,12 @@ namespace Ogre {
             MemoryPool::unique_ptr_with_alloc_deleter<btDiscreteDynamicsWorld> mBtWorld;
 
         public:
-            explicit DynamicsWorld(
-                    boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager,
-                    const Vector3 &gravity
-            ) : memoryContainerManager_(std::move(memoryContainerManager)),
-                mCollisionConfig(memoryContainerManager_->makeUniquePtr<btDefaultCollisionConfiguration>()),
-                mDispatcher(memoryContainerManager_->makeUniquePtr<btCollisionDispatcher>(
-                        &*mCollisionConfig
-                )),
-                mBroadphase(memoryContainerManager_->makeUniquePtr<btDbvtBroadphase>()),
-                mSolver(memoryContainerManager_->makeUniquePtr<btSequentialImpulseConstraintSolver>()),
-                mBtWorld(memoryContainerManager_->makeUniquePtr<btDiscreteDynamicsWorld>(
-                        &*mDispatcher,
-                        &*mBroadphase,
-                        &*mSolver,
-                        &*mCollisionConfig
-                )),
-                mDebugDrawer(nullptr) {
-
-
-                mBtWorld->setGravity(convert(gravity));
-//                mBtWorld->setInternalTickCallback(onTick);
-            }
-
-            ~DynamicsWorld() = default;
-
-            boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
-            addRigidBody(float mass,
-                         Entity *ent,
-                         ColliderType ct,
-                         const boost::shared_ptr<OgreBites::ApplicationContext> &ctx,
-                         Ogre::Root *root,
-                         Ogre::SceneManager *scnMgr,
-                         CollisionListener *listener = nullptr,
-                         int group = 1, int mask = -1);
-
-            const decltype(mBtWorld) &getBtWorld() const { return mBtWorld; }
-
-            void rayTest(const Ray &ray, RayResultCallback *callback, float maxDist = 1000);
-
-
-            /// create sphere collider using ogre provided data
-            boost::shared_ptr<btSphereShape> createSphereCollider(const MovableObject *mo);
-
-            /// create box collider using ogre provided data
-            boost::shared_ptr<btBoxShape> createBoxCollider(const MovableObject *mo);
-
-            /// create capsule collider using ogre provided data
-            boost::shared_ptr<btCapsuleShape> createCapsuleCollider(const MovableObject *mo);
-
-            /// create capsule collider using ogre provided data
-            boost::shared_ptr<btCylinderShape> createCylinderCollider(const MovableObject *mo);
-
-            void stepSimulation(float timeStep, int maxSubSteps = 1,
-                                float fixedTimeStep = btScalar(1.) / btScalar(60.)) {
-                ++simulationStepNow;
-                mBtWorld->stepSimulation(timeStep, maxSubSteps, fixedTimeStep);
-                this->onTick();
-            }
-
-        private:
-
-            boost::shared_ptr<DebugDrawer> mDebugDrawer;
-
-            size_t simulationStepNow = 0;
-
-        public:
-
-            void initDebugDrawer(SceneNode *node) {
-                if (node == nullptr) {
-                    mBtWorld->setDebugDrawer(nullptr);
-                    return;
-                }
-                if (mDebugDrawer) {
-                    mBtWorld->setDebugDrawer(nullptr);
-                }
-                mDebugDrawer = memoryContainerManager_->makeSharedPtr<DebugDrawer>(node);
-                mBtWorld->setDebugDrawer(mDebugDrawer.get());
-            }
-
-            int setDebugMode(int mode) {
-                if (mDebugDrawer) {
-                    mDebugDrawer->setDebugMode(mode);
-                }
-                return getDebugMode();
-            }
-
-            int getDebugMode() const { return mDebugDrawer && mDebugDrawer->getDebugMode(); }
-
-            void updateDebugDrawWorld() {
-                mDebugDrawer->updateDebugDrawWorld(&*mBtWorld);
-            }
-
-
-        private:
-
-            void onTick();
-
-        public:
 
             struct Bullet2OgreTracer
                     : public BulletMemoryContainer::UserPtrBase,
                       public boost::enable_shared_from_this<Bullet2OgreTracer> {
 
-//                const std::string typeName{"Bullet2OgreTracer"};
+                constexpr static const char *TypeNameTag = "Bullet2OgreTracer";
 
                 // ------ memory host information ------
                 boost::weak_ptr<OgreBites::ApplicationContext> pCtx;
@@ -351,7 +253,138 @@ namespace Ogre {
                     return false;
                 }
 
+
+                /** the object collision with other object
+                 *
+                 * Notice:
+                 *      don't do wast time operator in the function.
+                 *      carefully remove memoryContainerManager_ tree items in the function
+                 *      carefully remove object from ogre tree in the function
+                 *
+                 * Careful:
+                 *      the collision event may trigger 2 times.
+                 *          1: call A to B
+                 *          2: call B to A
+                 *
+                 * @param collisionType
+                 * @param idA
+                 * @param idB
+                 * @param other
+                 * @param collisionEvent
+                 * @param dynamicsWorld
+                 */
+                void collisionTrigger(
+                        BulletMemoryContainer::CollisionState::State collisionType,
+                        int idA,
+                        int idB,
+                        const boost::shared_ptr<BulletMemoryContainer::RigidObject>& self,
+                        const boost::shared_ptr<BulletMemoryContainer::RigidObject>& other,
+                        const boost::shared_ptr<BulletMemoryContainer::CollisionState> &collisionEvent,
+                        const boost::shared_ptr<DynamicsWorld> &dynamicsWorld
+                ) {
+                    // TODO proxy the collision event to other func to subtype
+                }
             };
+
+        public:
+            explicit DynamicsWorld(
+                    boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager,
+                    const Vector3 &gravity
+            ) : memoryContainerManager_(std::move(memoryContainerManager)),
+                mCollisionConfig(memoryContainerManager_->makeUniquePtr<btDefaultCollisionConfiguration>()),
+                mDispatcher(memoryContainerManager_->makeUniquePtr<btCollisionDispatcher>(
+                        &*mCollisionConfig
+                )),
+                mBroadphase(memoryContainerManager_->makeUniquePtr<btDbvtBroadphase>()),
+                mSolver(memoryContainerManager_->makeUniquePtr<btSequentialImpulseConstraintSolver>()),
+                mBtWorld(memoryContainerManager_->makeUniquePtr<btDiscreteDynamicsWorld>(
+                        &*mDispatcher,
+                        &*mBroadphase,
+                        &*mSolver,
+                        &*mCollisionConfig
+                )),
+                mDebugDrawer(nullptr) {
+
+
+                mBtWorld->setGravity(convert(gravity));
+//                mBtWorld->setInternalTickCallback(onTick);
+            }
+
+            ~DynamicsWorld() = default;
+
+            boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
+            addRigidBody(float mass,
+                         Entity *ent,
+                         ColliderType ct,
+                         const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer,
+                         CollisionListener *listener = nullptr,
+                         int group = 1, int mask = -1);
+
+            const decltype(mBtWorld) &getBtWorld() const { return mBtWorld; }
+
+            void rayTest(const Ray &ray, RayResultCallback *callback, float maxDist = 1000);
+
+
+            /// create sphere collider using ogre provided data
+            boost::shared_ptr<btSphereShape> createSphereCollider(const MovableObject *mo);
+
+            /// create box collider using ogre provided data
+            boost::shared_ptr<btBoxShape> createBoxCollider(const MovableObject *mo);
+
+            /// create capsule collider using ogre provided data
+            boost::shared_ptr<btCapsuleShape> createCapsuleCollider(const MovableObject *mo);
+
+            /// create capsule collider using ogre provided data
+            boost::shared_ptr<btCylinderShape> createCylinderCollider(const MovableObject *mo);
+
+            void stepSimulation(float timeStep, int maxSubSteps = 1,
+                                float fixedTimeStep = btScalar(1.) / btScalar(60.)) {
+                ++simulationStepNow;
+                mBtWorld->stepSimulation(timeStep, maxSubSteps, fixedTimeStep);
+                this->onTick();
+            }
+
+            const boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> &getMemoryContainerManager() {
+                return memoryContainerManager_;
+            }
+
+        private:
+
+            boost::shared_ptr<DebugDrawer> mDebugDrawer;
+
+            size_t simulationStepNow = 0;
+
+        public:
+
+            void initDebugDrawer(SceneNode *node) {
+                if (node == nullptr) {
+                    mBtWorld->setDebugDrawer(nullptr);
+                    return;
+                }
+                if (mDebugDrawer) {
+                    mBtWorld->setDebugDrawer(nullptr);
+                }
+                mDebugDrawer = memoryContainerManager_->makeSharedPtr<DebugDrawer>(node);
+                mBtWorld->setDebugDrawer(mDebugDrawer.get());
+            }
+
+            int setDebugMode(int mode) {
+                if (mDebugDrawer) {
+                    mDebugDrawer->setDebugMode(mode);
+                }
+                return getDebugMode();
+            }
+
+            int getDebugMode() const { return mDebugDrawer && mDebugDrawer->getDebugMode(); }
+
+            void updateDebugDrawWorld() {
+                mDebugDrawer->updateDebugDrawWorld(&*mBtWorld);
+            }
+
+
+        private:
+
+            void onTick();
 
         };
 

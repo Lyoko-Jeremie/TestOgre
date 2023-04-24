@@ -32,11 +32,12 @@ namespace BulletMemoryContainer {
 
     class UserPtrBase {
     public:
+        constexpr static const char *TypeNameTag = "UserPtrBase";
         const std::string typeName;
 
         UserPtrBase() = delete;
 
-        UserPtrBase(const std::string& typeName) : typeName(typeName) {}
+        UserPtrBase(const std::string &typeName) : typeName(typeName) {}
 
         virtual ~UserPtrBase() = default;
     };
@@ -349,6 +350,18 @@ namespace BulletMemoryContainer {
 //
 //        void deleteRawPtr[](void *, void *) {}
 
+        boost::shared_ptr<RigidObject> getBody(int id) {
+            return *roc.get<RigidObject::ID>().find(id);
+        }
+
+
+        std::pair<boost::shared_ptr<RigidObject>, boost::shared_ptr<RigidObject>> getBody2(int idA, int idB) {
+            auto &it = roc.get<RigidObject::ID>();
+            return std::make_pair(
+                    *it.find(idA),
+                    *it.find(idB)
+            );
+        }
 
     };
 

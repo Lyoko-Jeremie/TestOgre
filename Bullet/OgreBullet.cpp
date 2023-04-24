@@ -151,9 +151,7 @@ namespace Ogre::Bullet {
     DynamicsWorld::addRigidBody(float mass,
                                 Entity *ent,
                                 ColliderType ct,
-                                const boost::shared_ptr<OgreBites::ApplicationContext> &ctx,
-                                Ogre::Root *root,
-                                Ogre::SceneManager *scnMgr,
+                                const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer,
                                 CollisionListener *listener,
                                 int group, int mask) {
         auto node = ent->getParentSceneNode();
@@ -161,10 +159,11 @@ namespace Ogre::Bullet {
         auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(
                 node
         );
+        OgreAssert(bullet2OgreTracer->entity == ent, "entity must same");
 
-        auto bullet2OgreTracer = memoryContainerManager_->makeSharedPtr<Bullet2OgreTracer>(
-                ctx, root, scnMgr, ent
-        );
+//        auto bullet2OgreTracer = memoryContainerManager_->makeSharedPtr<Bullet2OgreTracer>(
+//                ctx, root, scnMgr, ent
+//        );
 
         if (ent->hasSkeleton()) {
             ent->addSoftwareAnimationRequest(false);
@@ -267,6 +266,7 @@ namespace Ogre::Bullet {
                 continue;
             }
 
+            // makes sure idA-idB pair
             if (idA > idB)
                 std::exchange(idA, idB);
 
@@ -304,20 +304,56 @@ namespace Ogre::Bullet {
             }
         }
 
-//                // TODO trigger event
-//                for (const auto &a: ccs) {
-//                    if (a->lastCheckTime == nowStep) {
-//                        // a->state;
-//                        if (a->state == BulletMemoryContainer::CollisionState::State::start) {
-//                            BOOST_LOG_TRIVIAL(trace) << a->idA << "-" << a->idB << " start";
-//                        } else if (a->state == BulletMemoryContainer::CollisionState::State::collision) {
-//                            BOOST_LOG_TRIVIAL(trace) << a->idA << "-" << a->idB << " collision";
-//                        }
-//                    } else {
-//                        // end
-//                        BOOST_LOG_TRIVIAL(trace) << a->idA << "-" << a->idB << " end";
-//                    }
+        // trigger event
+        auto dynamicsWorldPtr = shared_from_this();
+        for (const auto &a: ccs) {
+            auto pairs = memoryContainerManager_->getBody2(
+                    a->idA, a->idB
+            );
+            if (pairs.first->userPtr && pairs.first->userPtr->typeName == Bullet2OgreTracer::TypeNameTag) {
+                auto dp = boost::dynamic_pointer_cast<Bullet2OgreTracer>(pairs.first->userPtr);
+                if (!dp) {
+                    // TODO never go there in logic
+                } else {
+                    dp->collisionTrigger(
+                            a->state,
+                            a->idA,
+                            a->idB,
+                            pairs.first,
+                            pairs.second,
+                            a,
+                            dynamicsWorldPtr
+                    );
+                }
+            }
+            if (pairs.second->userPtr && pairs.second->userPtr->typeName == Bullet2OgreTracer::TypeNameTag) {
+                auto dp = boost::dynamic_pointer_cast<Bullet2OgreTracer>(pairs.second->userPtr);
+                if (!dp) {
+                    // TODO never go there in logic
+                } else {
+                    dp->collisionTrigger(
+                            a->state,
+                            a->idA,
+                            a->idB,
+                            pairs.second,
+                            pairs.first,
+                            a,
+                            dynamicsWorldPtr
+                    );
+                }
+            }
+//            if (a->lastCheckTime == nowStep) {
+//                // a->state;
+//                if (a->state == BulletMemoryContainer::CollisionState::State::start) {
+////                    BOOST_LOG_TRIVIAL(trace) << a->idA << "-" << a->idB << " start";
+//                } else if (a->state == BulletMemoryContainer::CollisionState::State::collision) {
+////                    BOOST_LOG_TRIVIAL(trace) << a->idA << "-" << a->idB << " collision";
 //                }
+//            } else {
+//                // end
+////                BOOST_LOG_TRIVIAL(trace) << a->idA << "-" << a->idB << " end";
+//            }
+        }
 
 
         // remove event ended
