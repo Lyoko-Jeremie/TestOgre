@@ -32,7 +32,7 @@ namespace BulletMemoryContainer {
 
     class UserPtrBase {
     public:
-        virtual ~UserPtrBase() = default;
+        virtual ~UserPtrBase() = 0;
     };
 
     struct CollisionShape {
