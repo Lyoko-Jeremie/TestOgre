@@ -1,7 +1,7 @@
 // jeremie
 
-#ifndef TESTOGRE_MEMORYPOOL_H
-#define TESTOGRE_MEMORYPOOL_H
+#ifndef TESTOGRE_BULLETMEMORYPOOL_H
+#define TESTOGRE_BULLETMEMORYPOOL_H
 
 #include <mutex>
 #include <cstdlib>
@@ -18,7 +18,7 @@
 #include <boost/align/aligned_alloc.hpp>
 #include <utility>
 
-namespace MemoryPool {
+namespace BulletMemoryPool {
 
     class MemoryCustomAllocatorManager : public boost::enable_shared_from_this<MemoryCustomAllocatorManager> {
     private:
@@ -121,7 +121,7 @@ namespace MemoryPool {
         }
     };
 
-    extern boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> gpMemoryPoolManager;
+    extern boost::shared_ptr<BulletMemoryPool::MemoryCustomAllocatorManager> gpMemoryPoolManager;
 
     extern void *btAlignedAllocFunc(size_t size, int alignment);
 
@@ -183,10 +183,10 @@ namespace MemoryPool {
         using propagate_on_container_move_assignment = std::true_type;
         using is_always_equal = std::true_type;
 
-        boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> memoryManager_;
+        boost::shared_ptr<BulletMemoryPool::MemoryCustomAllocatorManager> memoryManager_;
 
         explicit MemoryCustomAllocator(
-                boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> memoryManager
+                boost::shared_ptr<BulletMemoryPool::MemoryCustomAllocatorManager> memoryManager
         ) noexcept: memoryManager_(std::move(memoryManager)) {}
 
         MemoryCustomAllocator(const MemoryCustomAllocator &o) noexcept {
@@ -227,7 +227,7 @@ namespace MemoryPool {
     };
 
     template<typename T>
-    using unique_ptr_with_alloc_deleter = std::unique_ptr<T, boost::alloc_deleter<T, MemoryPool::MemoryCustomAllocator<T>>>;
+    using unique_ptr_with_alloc_deleter = std::unique_ptr<T, boost::alloc_deleter<T, BulletMemoryPool::MemoryCustomAllocator<T>>>;
 
     extern void setup();
 
@@ -235,4 +235,4 @@ namespace MemoryPool {
 }
 
 
-#endif //TESTOGRE_MEMORYPOOL_H
+#endif //TESTOGRE_BULLETMEMORYPOOL_H

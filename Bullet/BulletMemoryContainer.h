@@ -26,7 +26,7 @@
 
 #include "btBulletDynamicsCommon.h"
 
-#include "./MemoryPool.h"
+#include "./BulletMemoryPool.h"
 
 namespace BulletMemoryContainer {
 
@@ -234,16 +234,16 @@ namespace BulletMemoryContainer {
 
     private:
 
-        boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager_;
+        boost::shared_ptr<BulletMemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager_;
 
-        BulletMemoryContainer::CollisionStateContainer<MemoryPool::MemoryCustomAllocator<CollisionStateType>> ccs{
-                MemoryPool::MemoryCustomAllocator<CollisionStateType>(pMemoryPoolManager_)
+        BulletMemoryContainer::CollisionStateContainer<BulletMemoryPool::MemoryCustomAllocator<CollisionStateType>> ccs{
+                BulletMemoryPool::MemoryCustomAllocator<CollisionStateType>(pMemoryPoolManager_)
         };
-        BulletMemoryContainer::CollisionShapeContainer<MemoryPool::MemoryCustomAllocator<CollisionShapeType>> csc{
-                MemoryPool::MemoryCustomAllocator<CollisionShapeType>(pMemoryPoolManager_)
+        BulletMemoryContainer::CollisionShapeContainer<BulletMemoryPool::MemoryCustomAllocator<CollisionShapeType>> csc{
+                BulletMemoryPool::MemoryCustomAllocator<CollisionShapeType>(pMemoryPoolManager_)
         };
-        BulletMemoryContainer::RigidObjectContainer<MemoryPool::MemoryCustomAllocator<RigidObjectType>> roc{
-                MemoryPool::MemoryCustomAllocator<RigidObjectType>(pMemoryPoolManager_)
+        BulletMemoryContainer::RigidObjectContainer<BulletMemoryPool::MemoryCustomAllocator<RigidObjectType>> roc{
+                BulletMemoryPool::MemoryCustomAllocator<RigidObjectType>(pMemoryPoolManager_)
         };
 
         // the weak_ptr will keep "control block" alive, so use it carefully
@@ -253,15 +253,15 @@ namespace BulletMemoryContainer {
 
     public:
         explicit BulletMemoryContainerManager(
-                boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager
+                boost::shared_ptr<BulletMemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager
         ) : pMemoryPoolManager_(std::move(pMemoryPoolManager)) {}
 
         static boost::shared_ptr<BulletMemoryContainerManager>
         create(
-                boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager
+                boost::shared_ptr<BulletMemoryPool::MemoryCustomAllocatorManager> pMemoryPoolManager
         ) {
             return boost::allocate_shared<BulletMemoryContainerManager>(
-                    MemoryPool::MemoryCustomAllocator<BulletMemoryContainerManager>(pMemoryPoolManager),
+                    BulletMemoryPool::MemoryCustomAllocator<BulletMemoryContainerManager>(pMemoryPoolManager),
                     pMemoryPoolManager
             );
         }
@@ -283,15 +283,15 @@ namespace BulletMemoryContainer {
         template<typename Type, class... Args>
         auto makeSharedPtr(Args &&... args) {
             return boost::allocate_shared<Type>(
-                    MemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
+                    BulletMemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
                     std::forward<Args>(args)...
             );
         }
 
         template<typename Type, class... Args>
-        MemoryPool::unique_ptr_with_alloc_deleter<Type> makeUniquePtr(Args &&... args) {
+        BulletMemoryPool::unique_ptr_with_alloc_deleter<Type> makeUniquePtr(Args &&... args) {
             return boost::allocate_unique<Type>(
-                    MemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
+                    BulletMemoryPool::MemoryCustomAllocator<Type>(pMemoryPoolManager_),
                     std::forward<Args>(args)...
             );
         }
@@ -300,7 +300,7 @@ namespace BulletMemoryContainer {
         auto makeCollisionState(Args &&... args) {
             auto collisionState = ccs.emplace_back(
                     boost::allocate_shared<CollisionState>(
-                            MemoryPool::MemoryCustomAllocator<CollisionState>(pMemoryPoolManager_),
+                            BulletMemoryPool::MemoryCustomAllocator<CollisionState>(pMemoryPoolManager_),
                             std::forward<Args>(args)...
                     )
             ).first;

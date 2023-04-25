@@ -853,10 +853,10 @@ int main() {
     std::cout << "Hello, World!" << std::endl;
 
 
-    MemoryPool::setup();
+    BulletMemoryPool::setup();
 
     auto bulletMemoryContainerManager = BulletMemoryContainer::BulletMemoryContainerManager::create(
-            MemoryPool::gpMemoryPoolManager
+            BulletMemoryPool::gpMemoryPoolManager
     );
 
     auto dynamicsWorld = Ogre::Bullet::DynamicsWorld::create(
@@ -1233,9 +1233,9 @@ int main() {
                                   << "," << trans.getRotation().y()
                                   << "," << trans.getRotation().z() << "]"
                                   << " getScale : "
-                                  << "[" << pn->getScale().x
-                                  << "," << pn->getScale().y
-                                  << "," << pn->getScale().z << "]"
+                                  << "[" << thisSceneNode->getScale().x
+                                  << "," << thisSceneNode->getScale().y
+                                  << "," << thisSceneNode->getScale().z << "]"
                                   << std::endl;
                     }
                 }
@@ -1339,15 +1339,15 @@ int main() {
 
     // must destroy before ctx, and before bulletMemoryContainerManager
     dynamicsWorld.reset();
-    // must destroy before MemoryPool::gpMemoryPoolManager
+    // must destroy before BulletMemoryPool::gpMemoryPoolManager
     bulletMemoryContainerManager.reset();
 
     {
         std::cout << "gpMemoryPoolManager leak items "
-                  << MemoryPool::gpMemoryPoolManager->_getMemoryPoolRef().size()
+                  << BulletMemoryPool::gpMemoryPoolManager->_getMemoryPoolRef().size()
                   << std::endl;
         size_t s = 0;
-        for (const auto &n: MemoryPool::gpMemoryPoolManager->_getMemoryPoolRef()) {
+        for (const auto &n: BulletMemoryPool::gpMemoryPoolManager->_getMemoryPoolRef()) {
             s += n.second.size;
         }
         std::cout << "gpMemoryPoolManager leak size "
@@ -1355,7 +1355,7 @@ int main() {
                   << std::endl;
     }
     // after destroy gpMemoryPoolManager , never call Bullet again
-    MemoryPool::gpMemoryPoolManager.reset();
+    BulletMemoryPool::gpMemoryPoolManager.reset();
 
 
     ctx->closeApp();

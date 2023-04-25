@@ -108,8 +108,8 @@ set(OgreBullet
         ./Bullet/OgreBullet.cpp
         ./Bullet/BulletMemoryContainer.h
         ./Bullet/BulletMemoryContainer.cpp
-        ./Bullet/MemoryPool.cpp
-        ./Bullet/MemoryPool.h
+        ./Bullet/BulletMemoryPool.cpp
+        ./Bullet/BulletMemoryPool.h
         ./Bullet/VertexIndexToShape.cpp
         ./Bullet/VertexIndexToShape.h
         ./Bullet/BodyHelper.cpp

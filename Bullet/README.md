@@ -1,21 +1,21 @@
 整个Bullet引擎及对Bullet对象的引用全部采用内存池/对象池托管模式
 
-见 [MemoryPool.cpp](MemoryPool.cpp)
+见 [BulletMemoryPool.cpp](BulletMemoryPool.cpp)
 
 ```c++
 
 
-MemoryPool::gpMemoryPoolManager = boost::make_shared<MemoryPool::MemoryCustomAllocatorManager>();
+BulletMemoryPool::gpMemoryPoolManager = boost::make_shared<BulletMemoryPool::MemoryCustomAllocatorManager>();
 
 
 btAlignedAllocSetCustom(
-MemoryPool::btAllocFunc,
-MemoryPool::btFreeFunc
+BulletMemoryPool::btAllocFunc,
+BulletMemoryPool::btFreeFunc
 );
 
 
 
-MemoryPool::gpMemoryPoolManager.reset();
+BulletMemoryPool::gpMemoryPoolManager.reset();
 
 ```
 
@@ -55,7 +55,7 @@ the Memory Manager
 | MemoryCustomAllocatorManager.memoryPool (memory pice)
 | 
 |    all memory hold by 
-|         `extern boost::shared_ptr<MemoryPool::MemoryCustomAllocatorManager> gpMemoryPoolManager;`
+|         `extern boost::shared_ptr<BulletMemoryPool::MemoryCustomAllocatorManager> gpMemoryPoolManager;`
 | 
 |
 | |----------------------------------------
@@ -65,7 +65,7 @@ the Memory Manager
 | |        | btAllocFunc
 | |        | btFreeFunc
 | |
-| |   MUST call `MemoryPool::setup()` to install the allocate functions
+| |   MUST call `BulletMemoryPool::setup()` to install the allocate functions
 | |
 | |-----------------------------------------
 | 

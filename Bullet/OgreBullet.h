@@ -113,11 +113,11 @@ namespace Ogre {
 
             boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> memoryContainerManager_;
 
-            MemoryPool::unique_ptr_with_alloc_deleter<btDefaultCollisionConfiguration> mCollisionConfig;
-            MemoryPool::unique_ptr_with_alloc_deleter<btCollisionDispatcher> mDispatcher;
-            MemoryPool::unique_ptr_with_alloc_deleter<btDbvtBroadphase> mBroadphase;
-            MemoryPool::unique_ptr_with_alloc_deleter<btSequentialImpulseConstraintSolver> mSolver;
-            MemoryPool::unique_ptr_with_alloc_deleter<btDiscreteDynamicsWorld> mBtWorld;
+            BulletMemoryPool::unique_ptr_with_alloc_deleter<btDefaultCollisionConfiguration> mCollisionConfig;
+            BulletMemoryPool::unique_ptr_with_alloc_deleter<btCollisionDispatcher> mDispatcher;
+            BulletMemoryPool::unique_ptr_with_alloc_deleter<btDbvtBroadphase> mBroadphase;
+            BulletMemoryPool::unique_ptr_with_alloc_deleter<btSequentialImpulseConstraintSolver> mSolver;
+            BulletMemoryPool::unique_ptr_with_alloc_deleter<btDiscreteDynamicsWorld> mBtWorld;
 
         public:
 
