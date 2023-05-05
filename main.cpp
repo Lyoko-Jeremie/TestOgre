@@ -587,19 +587,25 @@ struct TtfMeshFactory : public std::enable_shared_from_this<TtfMeshFactory> {
         }
     };
 
-    struct Info : public std::enable_shared_from_this<Info> {
+    struct Info2d : public std::enable_shared_from_this<Info2d> {
         ttf_glyph_t *glyph{nullptr};
         std::shared_ptr<ttf_t> font{nullptr, ttf_free};
         std::shared_ptr<ttf_mesh_t> mesh{nullptr, ttf_free_mesh};
 
-        Info(ttf_glyph_t *_glyph, std::shared_ptr<ttf_t> _font, ttf_mesh_t *_mesh)
+        Info2d(ttf_glyph_t *_glyph, std::shared_ptr<ttf_t> _font, ttf_mesh_t *_mesh)
                 : glyph(_glyph), font(std::move(_font)),
                   mesh(std::make_shared<ttf_mesh_t>()) {
             mesh.reset(_mesh, ttf_free_mesh);
         }
 
-        Info(ttf_glyph_t *_glyph, std::shared_ptr<ttf_t> _font, std::shared_ptr<ttf_mesh_t> _mesh)
+        Info2d(ttf_glyph_t *_glyph, std::shared_ptr<ttf_t> _font, std::shared_ptr<ttf_mesh_t> _mesh)
                 : glyph(_glyph), font(std::move(_font)), mesh(std::move(_mesh)) {}
+
+        TtfMeshSize getPos() const {
+            return {
+                    -(glyph->xbounds[0] + glyph->xbounds[1]) / 2, -glyph->ybounds[0], 0.0f
+            };
+        }
 
         TtfMeshSize getSize() const {
             return {
@@ -669,7 +675,7 @@ struct TtfMeshFactory : public std::enable_shared_from_this<TtfMeshFactory> {
         return true;
     }
 
-    std::shared_ptr<Info> choose_glyph(wchar_t symbol) {
+    std::shared_ptr<Info2d> choose_glyph(wchar_t symbol) {
         // find a glyph in the font file
 
         int index = ttf_find_glyph(font.get(), symbol);
@@ -683,7 +689,7 @@ struct TtfMeshFactory : public std::enable_shared_from_this<TtfMeshFactory> {
 
         // if successful, release the previous object and save the state
 
-        std::shared_ptr<Info> data = std::make_shared<Info>(
+        std::shared_ptr<Info2d> data = std::make_shared<Info2d>(
                 &font->glyphs[index], font, out
         );
         return data;
