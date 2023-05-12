@@ -363,6 +363,10 @@ namespace BulletMemoryContainer {
 //
 //        void deleteRawPtr[](void *, void *) {}
 
+        boost::shared_ptr<CollisionShape> getCollisionShape(int id) {
+            return *csc.get<CollisionShapeType::ID>().find(id);
+        }
+
         boost::shared_ptr<RigidObject> getBody(int id) {
             return *roc.get<RigidObject::ID>().find(id);
         }

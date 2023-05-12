@@ -82,27 +82,26 @@ namespace Ogre::Bullet {
                                 const boost::shared_ptr<btCollisionShape> &collisionShape,
                                 const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer,
                                 int group, int mask) {
+        OgreAssert(entity, "entity must valid");
         auto node = entity->getParentSceneNode();
         OgreAssert(node, "entity must be attached to a SceneNode");
-        auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(
-                node
-        );
         if (bullet2OgreTracer) {
             OgreAssert(bullet2OgreTracer->entity == entity, "entity must same");
         }
+        auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(shared_from_this(), node);
 
 
         btVector3 inertia(0, 0, 0);
         if (mass != 0) // mass = 0 -> static
             collisionShape->calculateLocalInertia(mass, inertia);
 
-        memoryContainerManager_->makeShape(collisionShape);
+        auto shape = memoryContainerManager_->makeShape(collisionShape);
 
         auto rigidBody = memoryContainerManager_->makeBody(
                 memoryContainerManager_->makeRigidBodyPtr(
                         mass,
                         dynamic_cast<btMotionState *>(state.get()),
-                        dynamic_cast<btCollisionShape *>(collisionShape.get()),
+                        dynamic_cast<btCollisionShape *>(shape->ptr.get()),
                         inertia
                 ),
                 state
@@ -129,6 +128,12 @@ namespace Ogre::Bullet {
             node->getUserObjectBindings().setUserAny("uuid_bullet", rigidBody->uuid);
         }
 
+        state->bodyId = rigidBody->id;
+        state->bodyUUID = rigidBody->uuid;
+        state->bodyName = rigidBody->name;
+        shape->uuid = rigidBody->uuid;
+        shape->name = rigidBody->name;
+
         return rigidBody;
 
     }
@@ -139,11 +144,9 @@ namespace Ogre::Bullet {
                                 ColliderType colliderType,
                                 const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer,
                                 int group, int mask) {
+        OgreAssert(entity, "entity must valid");
         auto node = entity->getParentSceneNode();
         OgreAssert(node, "entity must be attached to a SceneNode");
-        auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(
-                node
-        );
         if (bullet2OgreTracer) {
             OgreAssert(bullet2OgreTracer->entity == entity, "entity must same");
         }
@@ -342,5 +345,15 @@ namespace Ogre::Bullet {
         mLines.colour(col);
         mLines.position(convert(to));
         mLines.colour(col);
+    }
+
+    void RigidBodyState::setDirty() const {
+        if (bodyId > 0) {
+            if (auto p = dynamicsWorldPtr.lock()) {
+                auto r = *atomic_load(&lastTransformPtr);
+                boost::lock_guard lg{p->mtxDirtyBody};
+                p->dirtyBody.insert_or_assign(bodyId,r);
+            }
+        }
     }
 } // namespace Ogre

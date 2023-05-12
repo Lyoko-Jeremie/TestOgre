@@ -7,6 +7,13 @@
 #define COMPONENTS_BULLET_H_
 
 #include <utility>
+#include <atomic>
+#include <vector>
+#include <map>
+
+#include <boost/thread/recursive_mutex.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/lock_guard.hpp>
 
 #include <boost/assert.hpp>
 
@@ -37,26 +44,78 @@ namespace Ogre {
 
         inline Vector3 convert(const btVector3 &v) { return Vector3(v.x(), v.y(), v.z()); }
 
+        class DynamicsWorld;
+
         /** A MotionState is Bullet's way of informing you about updates to an object.
          * Pass this MotionState to a btRigidBody to have your SceneNode updated automaticaly.
          */
         class RigidBodyState : public btMotionState, public boost::enable_shared_from_this<RigidBodyState> {
-            Node *mNode;
-
         public:
-            explicit RigidBodyState(Node *node) : mNode(node) {}
+            explicit RigidBodyState(boost::weak_ptr<DynamicsWorld> dynamicsWorldPtr)
+                    : dynamicsWorldPtr(std::move(dynamicsWorldPtr)) {
+                lastTransformPtr = boost::make_shared<btTransform>();
+                lastTransformPtr->setIdentity();
+            }
+
+            explicit RigidBodyState(boost::weak_ptr<DynamicsWorld> dynamicsWorldPtr, Ogre::Node *mNode)
+                    : dynamicsWorldPtr(std::move(dynamicsWorldPtr)) {
+                lastTransformPtr = boost::make_shared<btTransform>(
+                        btTransform(convert(mNode->getOrientation()), convert(mNode->getPosition()))
+                );
+            }
+
+            boost::weak_ptr<DynamicsWorld> dynamicsWorldPtr;
+
+            boost::shared_ptr<btTransform> lastTransformPtr;
+
+            decltype(BulletMemoryContainer::RigidObject::id) bodyId = -1;
+            std::string bodyUUID{};
+            std::string bodyName{};
+
+            auto getOrientationPosition() {
+                auto lastT = *atomic_load(&lastTransformPtr);
+                return std::make_pair(convert(lastT.getRotation()), convert(lastT.getOrigin()));
+            }
+
+            auto setOrientationPosition(const Quaternion &q, const Vector3 &v) {
+                atomic_store(&lastTransformPtr, boost::make_shared<decltype(lastTransformPtr)::element_type>(
+                        convert(q), convert(v)
+                ));
+            }
+
+            void setWithNode(Ogre::Node *mNode) {
+                atomic_store(&lastTransformPtr, boost::make_shared<decltype(lastTransformPtr)::element_type>(
+                        btTransform(convert(mNode->getOrientation()), convert(mNode->getPosition()))
+                ));
+            }
 
             void getWorldTransform(btTransform &ret) const override {
-                ret = btTransform(convert(mNode->getOrientation()), convert(mNode->getPosition()));
+                ret = *atomic_load(&lastTransformPtr);
+//                ret = btTransform(convert(mNode->getOrientation()), convert(mNode->getPosition()));
             }
 
             // Bullet will call this function to update Ogre object info
             void setWorldTransform(const btTransform &in) override {
-                btQuaternion rot = in.getRotation();
-                btVector3 pos = in.getOrigin();
-                mNode->setOrientation(rot.w(), rot.x(), rot.y(), rot.z());
-                mNode->setPosition(pos.x(), pos.y(), pos.z());
+                // multi thread
+                atomic_store(&lastTransformPtr, boost::make_shared<decltype(lastTransformPtr)::element_type>(in));
+                // mark as dirty
+                setDirty();
+//                btQuaternion rot = in.getRotation();
+//                btVector3 pos = in.getOrigin();
+//                // trigger update
+//                mNode->setOrientation(rot.w(), rot.x(), rot.y(), rot.z());
+//                mNode->setPosition(pos.x(), pos.y(), pos.z());
             }
+
+            static void UpdateNodeTransform(Ogre::Node &mNode, const btTransform &t) {
+                btQuaternion rot = t.getRotation();
+                btVector3 pos = t.getOrigin();
+                // update
+                mNode.setOrientation(rot.w(), rot.x(), rot.y(), rot.z());
+                mNode.setPosition(pos.x(), pos.y(), pos.z());
+            }
+
+            void setDirty() const;
         };
 
         class DebugDrawer : public btIDebugDraw {
@@ -153,7 +212,7 @@ namespace Ogre {
                         Ogre::Root *root,
                         Ogre::SceneManager *scnMgr,
                         Entity *ent
-                ) : BulletMemoryContainer::UserPtrBase{"Bullet2OgreTracer"},
+                ) : BulletMemoryContainer::UserPtrBase{Bullet2OgreTracer::TypeNameTag},
                     pCtx(ctx), root(root), scnMgr(scnMgr), entity(ent) {
                     BOOST_ASSERT_MSG(
                             !pCtx.expired() && root && scnMgr && sceneNode && entity,
@@ -373,6 +432,22 @@ namespace Ogre {
 
             const boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> &getMemoryContainerManager() {
                 return memoryContainerManager_;
+            }
+
+        private:
+            friend class RigidBodyState;
+
+            // BodyId
+            std::map<decltype(BulletMemoryContainer::RigidObject::id), btTransform> dirtyBody;
+            boost::mutex mtxDirtyBody;
+
+        public:
+
+            decltype(dirtyBody) getDirtyBodyIds() {
+                boost::lock_guard lg{mtxDirtyBody};
+                decltype(dirtyBody) dirtyBodyN;
+                dirtyBody.swap(dirtyBodyN);
+                return dirtyBodyN;
             }
 
         private:

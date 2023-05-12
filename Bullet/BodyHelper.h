@@ -10,8 +10,9 @@ namespace Ogre::Bullet::BodyHelper {
     extern boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager::RigidObjectType>
     createInfiniteGround(
             boost::shared_ptr<Ogre::Bullet::DynamicsWorld> dynamicsWorld,
+            std::string name,
             btVector3 origin = btVector3{0, 0, 0},
-            Entity *ent = nullptr,
+            Entity *entity = nullptr,
             const boost::shared_ptr<DynamicsWorld::Bullet2OgreTracer> &bullet2OgreTracer = nullptr
     );
 

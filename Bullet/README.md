@@ -23,7 +23,7 @@ BulletMemoryPool::gpMemoryPoolManager.reset();
 
 ```c++
 
-auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(node);
+auto state = memoryContainerManager_->makeSharedPtr<RigidBodyState>(dynamicsWorld, node);
 
 auto shape = memoryContainerManager->makeSharedPtr<btBvhTriangleMeshShape>(trimesh, useQuantizedAABB);
 

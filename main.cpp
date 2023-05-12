@@ -855,6 +855,16 @@ std::shared_ptr<TtfMeshData> createTtfMesh(Ogre::SceneManager *scnMgr,
     );
 }
 
+
+BulletMemoryContainer::BulletMemoryContainerManager &
+aa(boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> P) {
+    return *P;
+}
+
+auto bb(boost::shared_ptr<BulletMemoryContainer::BulletMemoryContainerManager> P, size_t id) {
+    return P->getCollisionShape(id);
+}
+
 int main() {
     std::cout << "Hello, World!" << std::endl;
 
@@ -870,7 +880,7 @@ int main() {
     );
 
     Ogre::Bullet::BodyHelper::createInfiniteGround(
-            dynamicsWorld
+            dynamicsWorld, "InfiniteGround-1"
     );
 
 
@@ -1002,7 +1012,13 @@ int main() {
 //        auto b = dynamicsWorld->addRigidBody(
 //                0,
 //                ent,
-//                Ogre::Bullet::ColliderType::CT_HULL
+//                Ogre::Bullet::ColliderType::CT_HULL,
+//                boost::make_shared<Ogre::Bullet::DynamicsWorld::Bullet2OgreTracer>(
+//                        ctx,
+//                        root,
+//                        scnMgr,
+//                        ent
+//                )
 //        );
 //    }
     {
@@ -1015,7 +1031,13 @@ int main() {
         auto b = dynamicsWorld->addRigidBody(
                 0,
                 ninjaEntity,
-                Ogre::Bullet::ColliderType::CT_TRIMESH
+                Ogre::Bullet::ColliderType::CT_TRIMESH,
+                boost::make_shared<Ogre::Bullet::DynamicsWorld::Bullet2OgreTracer>(
+                        ctx,
+                        root,
+                        scnMgr,
+                        ninjaEntity
+                )
         );
     }
 
@@ -1140,7 +1162,13 @@ int main() {
             auto b = dynamicsWorld->addRigidBody(
                     0,
                     thisEntity,
-                    Ogre::Bullet::ColliderType::CT_TRIMESH
+                    Ogre::Bullet::ColliderType::CT_TRIMESH,
+                    boost::make_shared<Ogre::Bullet::DynamicsWorld::Bullet2OgreTracer>(
+                            ctx,
+                            root,
+                            scnMgr,
+                            thisEntity
+                    )
             );
 
             entityList.push_back(thisEntity);
@@ -1166,7 +1194,13 @@ int main() {
             auto b = dynamicsWorld->addRigidBody(
                     0,
                     thisEntity,
-                    Ogre::Bullet::ColliderType::CT_TRIMESH
+                    Ogre::Bullet::ColliderType::CT_TRIMESH,
+                    boost::make_shared<Ogre::Bullet::DynamicsWorld::Bullet2OgreTracer>(
+                            ctx,
+                            root,
+                            scnMgr,
+                            thisEntity
+                    )
             );
 
             entityList.push_back(thisEntity);
@@ -1291,7 +1325,13 @@ int main() {
         auto b = dynamicsWorld->addRigidBody(
                 1,
                 mEntity,
-                Ogre::Bullet::ColliderType::CT_SPHERE
+                Ogre::Bullet::ColliderType::CT_SPHERE,
+                boost::make_shared<Ogre::Bullet::DynamicsWorld::Bullet2OgreTracer>(
+                        ctx,
+                        root,
+                        scnMgr,
+                        mEntity
+                )
         );
     }
 
@@ -1333,6 +1373,19 @@ int main() {
 
     while (!ctx->getRoot()->endRenderingQueued()) {
         dynamicsWorld->stepSimulation(1 / 60.f);
+        auto dirtyIds = dynamicsWorld->getDirtyBodyIds();
+        for (const auto &a: dirtyIds) {
+            auto bp = bulletMemoryContainerManager->getBody(a.first);
+            if (bp) {
+                if (bp->userPtr) {
+//                    std::cout << "bp->userPtr->typeName " << bp->userPtr->typeName << std::endl;
+                    if (bp->userPtr->typeName == Ogre::Bullet::DynamicsWorld::Bullet2OgreTracer::TypeNameTag) {
+                        auto tr = dynamic_pointer_cast<Ogre::Bullet::DynamicsWorld::Bullet2OgreTracer>(bp->userPtr);
+                        Ogre::Bullet::RigidBodyState::UpdateNodeTransform(*(tr->sceneNode), a.second);
+                    }
+                }
+            }
+        }
         ctx->getRoot()->renderOneFrame();
         dynamicsWorld->updateDebugDrawWorld();
 //        if (ctx->getRenderWindow()->isActive() || ctx->getRenderWindow()->isVisible()) {
