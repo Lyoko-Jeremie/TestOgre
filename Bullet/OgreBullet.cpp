@@ -265,6 +265,9 @@ namespace Ogre::Bullet {
             auto pairs = memoryContainerManager_->getBody2(
                     a->idA, a->idB
             );
+            if (!pairs.first || !pairs.second) {
+                continue;
+            }
             if (pairs.first->userPtr && pairs.first->userPtr->typeName == Bullet2OgreTracer::TypeNameTag) {
                 auto dp = boost::dynamic_pointer_cast<Bullet2OgreTracer>(pairs.first->userPtr);
                 if (!dp) {
@@ -352,7 +355,7 @@ namespace Ogre::Bullet {
             if (auto p = dynamicsWorldPtr.lock()) {
                 auto r = *atomic_load(&lastTransformPtr);
                 boost::lock_guard lg{p->mtxDirtyBody};
-                p->dirtyBody.insert_or_assign(bodyId,r);
+                p->dirtyBody.insert_or_assign(bodyId, r);
             }
         }
     }
