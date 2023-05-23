@@ -96,6 +96,8 @@ namespace BulletMemoryPool {
                     (unsigned char *) boost::alignment::aligned_alloc(alignment, size),
                     boost::alignment::aligned_free
             );
+            // PX_ASSERT((size_t(ptr) & 15)==0);  // when align=16
+            BOOST_ASSERT((size_t(b.get()) & (alignment - 1)) == 0);
             if (b) {
                 memoryPool.emplace(std::make_pair(b.get(), createPtrInfo(b, size, true)));
             }
