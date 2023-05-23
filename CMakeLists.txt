@@ -122,6 +122,94 @@ link_directories(${BULLET_LIBRARY_DIRS})
 # =============================== find Bullet end ====================================
 
 
+## =============================== find PhysX start ====================================
+#
+#
+## https://github.com/NVIDIA-Omniverse/PhysX
+#set(PHYSX_PATH "h:/CodeLib/PhysX5/physx")
+## https://github.com/NVIDIA-Omniverse/PhysX/issues/127
+#set(CMAKEMODULES_VERSION "1.28")
+#set(CMAKEMODULES_PATH "h:/packman-repo/chk/CMakeModules/1.28.trunk.32494385/")
+#
+#set(PHYSX_SLN_PHYSXDEVICE_PATH "H:/packman-repo/chk/PhysXDevice/18.12.7.4/bin/x86/")
+#set(PHYSX_SLN_FREEGLUT_PATH "H:/packman-repo/chk/freeglut-windows/3.4_1.1/bin/")
+#
+#
+##### Build PhysX library ####
+## https://github.com/NVIDIAGameWorks/PhysX/issues/249
+## PHYSX_PATH - path to the `{cloned repository}/physx` repo directory git://github.com/NVIDIAGameWorks/PhysX.git
+#set( PHYSX_ROOT_DIR ${PHYSX_PATH} ) #This is needed for $ENV{PHYSX_PATH}/compiler/public/CMakeLists.txt
+#set( PHYSX_INCLUDE_DIRS ${PHYSX_PATH}/include/ ${PHYSX_PATH}/../pxshared/include/ )
+#set( PHYSX_LIBRARIES
+#        PhysXExtensions
+#        PhysX
+#        PhysXPvdSDK
+#        PhysXVehicle
+#        PhysXCharacterKinematic
+#        PhysXCooking
+#        PhysXCommon
+#        PhysXFoundation
+#        # SnippetUtils
+#        )
+#
+#set(TARGET_BUILD_PLATFORM "windows") # has to match the TARGET_BUILD_PLATFORM in $ENV{PHYSX_PATH}/physix/buildtools/cmake_generate_projects.py
+#set(PX_BUILDSNIPPETS OFF CACHE BOOL "Generate the snippets")
+#set(PX_BUILDPUBLICSAMPLES OFF CACHE BOOL "Generate the samples projects")
+#set(PX_GENERATE_STATIC_LIBRARIES ON CACHE BOOL "Generate static libraries")
+#set(PX_FLOAT_POINT_PRECISE_MATH OFF CACHE BOOL "Float point precise math")
+#set(NV_USE_STATIC_WINCRT ON CACHE BOOL "Use the statically linked windows CRT")
+#set(NV_USE_DEBUG_WINCRT ON CACHE BOOL "Use the debug version of the CRT")
+#set(PXSHARED_PATH ${PHYSX_PATH}/../pxshared)
+#set(PXSHARED_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+#set(PX_OUTPUT_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR}/externals/physx)
+#set(PX_OUTPUT_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/externals/physx)
+#
+#message(STATUS "PX_OUTPUT_LIB_DIR ${PX_OUTPUT_LIB_DIR}")
+#message(STATUS "PX_OUTPUT_BIN_DIR ${PX_OUTPUT_BIN_DIR}")
+#
+## Call into PhysX's CMake scripts
+#add_subdirectory(${PHYSX_PATH}/compiler/public externals/physx)
+#
+#
+## =============================== find PhysX end ====================================
+
+
+
+
+# =============================== find PhysX start ====================================
+
+# HOW TO :
+# 1. call `physx/generate_projects.sh` to generate .sln build file
+# 2. open `physx/compiler/vc17win64/PhysXSDK.sln`
+# 3. change all sub-target type to `/MD` `/MDd` in right tab project list , rebuild all file
+
+set(PhysX_INCLUDE_DIR "h:/CodeLib/PhysX/physx/install/vc17win64/PhysX/include/")
+#set(PhysX_LIBRARY_DIR "h:/CodeLib/PhysX/physx/bin/win.x86_64.vc143.mt/checked/")
+set(PhysX_LIBRARY_DIR "h:/CodeLib/PhysX/physx/bin/win.x86_64.vc143.mt/debug/")
+
+set(PhysX_LIBRARYS
+        # copy dll to exe dir
+        PhysXCommon_64
+        PhysX_64
+        PhysXFoundation_64
+        PhysXCooking_64
+        PVDRuntime_64
+        # the PhysXGPU_64 is only a dll, copy it to exe dir
+#        PhysXGPU_64
+        # follow -- need rebuild with /MD /MDd
+        PhysXPvdSDK_static_64
+        PhysXExtensions_static_64
+        )
+list(TRANSFORM PhysX_LIBRARYS PREPEND ${PhysX_LIBRARY_DIR})
+list(TRANSFORM PhysX_LIBRARYS APPEND ".lib")
+
+message(STATUS "PhysX_LIBRARYS ${PhysX_LIBRARYS}")
+
+# =============================== find PhysX end ====================================
+
+
+
+
 # =============================== find generator start ====================================
 
 # https://github.com/ilmola/generator
@@ -146,6 +234,12 @@ target_link_libraries(${ProjectMainName} generator.lib)
 
 target_link_libraries(${ProjectMainName} ${BULLET_LIBRARIES})
 
+
+include_directories(${PhysX_INCLUDE_DIR})
+#link_directories(${PhysX_LIBRARY_DIR})
+target_link_libraries(${ProjectMainName} ${PhysX_LIBRARYS})
+
+
 if (CMAKE_THREAD_LIBS_INIT)
     target_link_libraries(${ProjectMainName} ${CMAKE_THREAD_LIBS_INIT})
 endif ()
@@ -162,4 +256,27 @@ if (WIN32)
 else (WIN32)
 endif (WIN32)
 
+## =============================== post PhysX start ====================================
+#
+## Add physx libraries to target
+#target_link_libraries(${ProjectMainName} ${PHYSX_LIBRARIES})
+##### Windows only: Copy the Physx dll files to the simulation executable####
+#
+#if (TARGET_BUILD_PLATFORM STREQUAL "windows")
+#    # References NvidiaBuildOptions.cmake to figure out if system is 32/64 bit
+#    IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+#        SET(LIBPATH_SUFFIX "64")
+#    ELSE()
+#        SET(LIBPATH_SUFFIX "32")
+#    ENDIF()
+#    GetPlatformBinName(PLATFORM_BIN_NAME ${LIBPATH_SUFFIX})
+#    set(PhysxOutputPath ${PX_OUTPUT_LIB_DIR}/bin/${PLATFORM_BIN_NAME}/)
+#    message(STATUS "PhysxOutputPath ${PhysxOutputPath}")
+#    message("Physx Output Path: " ${PhysxOutputPath})
+#
+#    # copy PhysX dll's to build dir. Happens on every build.
+#    add_custom_command(TARGET ${ProjectMainName} POST_BUILD
+#            COMMAND ${CMAKE_COMMAND} -E copy_directory "${PhysxOutputPath}" "$<TARGET_FILE_DIR:${ProjectMainName}>/..")
+#endif()
+## =============================== post PhysX end ====================================
 
